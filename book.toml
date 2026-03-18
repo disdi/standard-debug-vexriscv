@@ -1,0 +1,10 @@
+[book]
+authors = ["Glyn Normington"]
+language = "en"
+src = "src"
+title = "Vexriscv Debug Support"
+
+[output.html]
+smart-punctuation = false
+git-repository-url = "https://github.com/lborb/book"
+site-url = "https://lborb.github.io/book/"
