@@ -1,4 +1,4 @@
 # Vexriscv Debug
 
-A catalogue of Vesricv Debug Tasks.
+A catalogue of Vexriscv Debug Tasks.
 

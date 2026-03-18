@@ -6,5 +6,5 @@ title = "Vexriscv Debug Support"
 
 [output.html]
 smart-punctuation = false
-git-repository-url = "https://github.com/lborb/book"
-site-url = "https://lborb.github.io/book/"
+git-repository-url = "https://github.com/disdi/standard-debug-vexriscv"
+site-url = "https://disdi.github.io/standard-debug-vexriscv/"
