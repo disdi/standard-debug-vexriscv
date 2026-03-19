@@ -1,6 +1,7 @@
-# VexRiscv Debug Support
+# Standard Debug Spec Milestone
 
-This is implementation of  Standard Debug specification in Vexriscv:
+Below are milestones planned for Standard Debug specification implementation in Vexriscv:
+
 * [Phase 1A](./dtm_dmi.md) JTAG DTM + DMI Bus
 * [Phase 1B](./dm.md) Core DM (dmcontrol/dmstatus)
 * [Phase 1C](./register.md) Abstract Register accsess

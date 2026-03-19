@@ -7,7 +7,6 @@
 
 ---
 
-
 **Tasks:**
 - [ ] Implement JTAG TAP state machine with standard IR codes (BYPASS 0x1f, IDCODE 0x01, dtmcs, dmi)
 - [ ] Implement `IDCODE` register with manufacturer/part/version fields
@@ -16,6 +15,8 @@
 - [ ] Implement DMI request/response handshake with busy detection (`dmistat=3`)
 - [ ] Create DMI bus interface (SpinalHDL Bundle) — internal bus between DTM and DM
 - [ ] Implement `dmihardreset` and `dmireset` for error recovery
+
+---
 
 **GDB/OpenOCD at this phase:**
 ```
