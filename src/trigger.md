@@ -3,6 +3,8 @@
 **Dependency:** Phase 1D (dcsr exists for `cause=2` trigger reporting)
 **Deliverable:** Hardware breakpoints and data watchpoints through standard trigger CSRs
 
+---
+
 **Tasks:**
 - [ ] Implement `tselect` (0x7A0, Sec 5.7.1) — WARL trigger index selection (support N triggers, parameterized)
 - [ ] Implement `tdata1` (0x7A1, Sec 5.7.2) — `type`, `dmode`, `data` with type multiplexing
@@ -14,6 +16,8 @@
 - [ ] Implement `dcsr.cause=2` (trigger) on trigger match
 - [ ] Migrate existing `hardwareBreakpoints` PC-match logic to use trigger CSRs
 
+---
+
 **GDB/OpenOCD at this phase — everything from Phase 1E, plus:**
 | GDB Command | Phase 1E | Phase 1F |
 |---|---|---|
@@ -22,3 +26,5 @@
 | `watch counter` | ❌ | ✅ Data watchpoint (fires on write to `&counter`) |
 | `rwatch buffer` | ❌ | ✅ Read watchpoint (fires on read from `&buffer`) |
 | `break` on flash/ROM | ❌  | ✅ Hardware BP doesn't modify memory |
+
+---

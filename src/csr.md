@@ -1,7 +1,7 @@
 # CSR Register
 
 ### Phase 1D: Debug CSRs (dcsr, dpc)
-**Spec Reference:** Sec 4.8.1 (`dcsr`), Sec 4.8.2 (`dpc`), Sec 4.8.3 (`dscratch0`), Sec 4.1-4.7 (Debug Mode)
+
 **Dependency:** Phase 1C (can read/write CSRs via abstract commands)
 **Deliverable:** Proper halt cause reporting, single-step via `dcsr.step`, PC via `dpc`
 
@@ -32,4 +32,5 @@ GDB: Full register display with proper PC, single-step works
 | `next` / `step` (source-level) | ❌ | Needs memory read for source line mapping |
 | `break` / `load` / `x/...` / `bt` | ❌ | Needs memory access |
 
-**Practical use:** Halt hello world, see exactly where it stopped (PC with source line if ELF has debug info), read all registers, and single-step instruction by instruction. Watch the program counter advance through the code. Cannot see memory, set breakpoints, or do source-level stepping.
+**Practical use:** Halt hello world, see exactly where it stopped (PC with source line if ELF has debug info), read all registers, and single-step instruction by instruction. Watch the program counter advance through the code. 
+Cannot see memory, set breakpoints, or do source-level stepping.

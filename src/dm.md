@@ -1,9 +1,11 @@
 # Debug Module
 
 ### Phase 1B: Core DM Registers (Minimal Control Plane)
-**Spec Reference:** Sec 3.14.1 (`dmstatus`), Sec 3.14.2 (`dmcontrol`)
+
 **Dependency:** Phase 1A (DMI bus exists)
 **Deliverable:** Can halt/resume a hart through standard `dmcontrol`/`dmstatus`
+
+---
 
 **Tasks:**
 - [ ] Create `DebugModule.scala` — DMI address decoder, register file
@@ -12,6 +14,8 @@
 - [ ] Implement `dmactive` state machine — activation/deactivation with reset behavior
 - [ ] Wire DM hart interface to VexRiscv pipeline (reuse existing `haltIt`/`resetIt` signals)
 - [ ] Implement mutual exclusion on `dmcontrol` writes (only one of `resumereq`/`hartreset`/`ackhavereset`/`setresethaltreq`/`clrresethaltreq` may be 1)
+
+---
 
 **GDB/OpenOCD at this phase:**
 ```
@@ -33,4 +37,8 @@ GDB: Connects with warnings, can't read registers
 | `stepi` | ❌ | Needs `dcsr.step` |
 | `break` / `load` / `x/...` | ❌ | Needs memory access |
 
-**Practical use:** You can halt and resume the CPU, and reset it. Verify the hello world program is running (UART output appears when resumed, stops when halted). Cannot inspect or modify anything.
+**Practical use:** CPU can be halted and resumed. CPU can be also reset it. Verify the hello world program is running (UART output appears when resumed, stops when halted). 
+Cannot inspect or modify anything.
+
+---
+

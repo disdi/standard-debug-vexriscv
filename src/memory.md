@@ -1,11 +1,14 @@
 # Memory
 
 ### Phase 1E: Memory Access (Program Buffer)
-**Spec Reference:** Sec 3.5 (Program Buffer), Sec 3.14.15 (`progbuf0`), Sec 3.14.6 (`abstractcs.progbufsize`)
+
 **Dependency:** Phase 1C (abstract command framework working)
 **Deliverable:** Debugger can read/write target memory. **This is the "fully functional hello world debugger" milestone.**
 
 **Approach:** Program Buffer is recommended for VexRiscv since the instruction injection port already exists and can be reused. OpenOCD's RISC-V driver knows how to synthesize memory read/write sequences using `lw`/`sw` instructions in the program buffer.
+
+---
+
 
 **Tasks:**
 - [ ] Implement `progbuf0` (0x20) — minimum 1 word (2 is better: one for the access instruction, one for `ebreak`)
@@ -31,7 +34,9 @@ Memory Write (e.g., write value V to address A):
   1. Write "sw s1, 0(s0)" into progbuf0
   2. Write address A to s0, value V to s1 (via abstract register write)
   3. Execute postexec → stores V to mem[A]
+
 ```
+---
 
 **GDB/OpenOCD at this phase:**
 ```
@@ -96,3 +101,6 @@ a0  0x80001000   a1  0x00000000   ...
 
 (gdb) continue
 Continuing.    ← "Hello, World!" appears on UART
+
+```
+---
