@@ -1,44 +1,34 @@
 # Debug Module
 
-### Phase 1B: Core DM Registers (Minimal Control Plane)
+### Phase 1B: Core DM Registers
 
-**Dependency:** Phase 1A (DMI bus exists)
-**Deliverable:** Can halt/resume a hart through standard `dmcontrol`/`dmstatus`
 
 ---
-
-**Tasks:**
-- [ ] Create `DebugModule.scala` — DMI address decoder, register file
-- [ ] Implement `dmcontrol` (0x10) — `dmactive`, `haltreq`, `resumereq`, `ndmreset`, `hartsello` (single hart = hart 0)
-- [ ] Implement `dmstatus` (0x11) — `version=3` (1.0), `authenticated=1` (no auth), `anyhalted`/`allhalted`/`anyrunning`/`allrunning`
-- [ ] Implement `dmactive` state machine — activation/deactivation with reset behavior
-- [ ] Wire DM hart interface to VexRiscv pipeline (reuse existing `haltIt`/`resetIt` signals)
-- [ ] Implement mutual exclusion on `dmcontrol` writes (only one of `resumereq`/`hartreset`/`ackhavereset`/`setresethaltreq`/`clrresethaltreq` may be 1)
-
----
-
-**GDB/OpenOCD at this phase:**
-```
-OpenOCD: Connects, reads dmstatus.version=3 ✅
-OpenOCD: Writes haltreq=1, hart halts ✅
-OpenOCD: Polls dmstatus.allhalted=1 ✅
-OpenOCD: Reads abstractcs → not implemented, gets 0 ❌
-OpenOCD: Tries abstract register read of dcsr → fails ❌
-OpenOCD: "Error: failed to read dcsr"
-GDB: Connects with warnings, can't read registers
-```
-| GDB Command | Works? | Reason |
+| Spec Feature (Chapter) | Vexriscv Debug Implementation | Implementation Details |
 |---|---|---|
-| `target remote :3333` | ⚠️ Connects with warnings | OpenOCD finds DM but can't read registers |
-| `continue` | ✅ | `dmcontrol.resumereq` |
-| `Ctrl+C` (halt) | ✅ | `dmcontrol.haltreq` |
-| `monitor reset halt` | ✅ | `dmcontrol.ndmreset` + `haltreq` |
-| `info registers` | ❌ | Needs abstract register access |
-| `stepi` | ❌ | Needs `dcsr.step` |
-| `break` / `load` / `x/...` | ❌ | Needs memory access |
-
-**Practical use:** CPU can be halted and resumed. CPU can be also reset it. Verify the hello world program is running (UART output appears when resumed, stops when halted). 
-Cannot inspect or modify anything.
-
+| **Ch 3: Debug Module (DM)** | | |
+| `dmcontrol` (0x10) | ✅ Implemented | `dmactive`, `ndmreset`, `haltreq`, `resumereq`, `ackhavereset`, `hartsello/hi`. Missing: `hasel`, `setresethaltreq`, `hartreset`, `keepalive` |
+| `dmstatus` (0x11) | ✅ Implemented | `version`, `authenticated=1`, all halted/running/unavail/nonexistent/resumeack/havereset flags, `impebreak=1` |
+| `hartinfo` (0x12) | ✅ Implemented | `dataaddr=0`, `datasize=0`, `dataaccess=0`, `nscratch=0` |
+| `abstractcs` (0x16) | ✅ Implemented | `datacount`, `progbufsize`, `busy`, `cmderr` (all 7 error codes) |
+| `command` (0x17) — Access Register | ✅ Implemented | cmdtype=0 with full FSM: transfer, write, postexec, aarsize validation, GPR+FPU register access |
+| `command` (0x17) — Access Memory | ❌ Not implemented | Returns NOT_SUPPORTED |
+| `command` (0x17) — Quick Access | ❌ Not implemented | Returns NOT_SUPPORTED |
+| `abstractauto` (0x18) | ✅ Implemented | `autoexecdata` and `autoexecProgbuf` for burst access |
+| `progbuf0-N` (0x20+) | ✅ Implemented | Parameterized progbuf memory, multi-word execution with counter, redo support |
+| `data0-N` (0x04+) | ✅ Implemented | Memory-backed, hart writes via `fromHarts`, host reads async |
+| `sbcs` (0x38) — System Bus Access | ✅ Implemented (optional) | `sbversion=1`, `sbaccess`, `sbbusyerror`, `sbbusy`, `sbreadonaddr`, `sbautoincrement`, `sbreadondata`, `sberror`, 32-bit only |
+| `sbaddress0` (0x39) | ✅ Implemented | Read/write with auto-increment |
+| `sbdata0` (0x3c) | ✅ Implemented | Read/write with bus triggers |
+| `sbaddress1-3` / `sbdata1-3` | ❌ Not implemented | 32-bit address/data only |
+| `sbcs` 8/16/64/128-bit access | ❌ Not implemented | Only `sbaccess32` supported |
+| `haltsum0` (0x40) | ✅ Implemented | Per-hart halted bits, up to 32 harts |
+| `haltsum1-3` | ❌ Not implemented | Only `haltsum0` exists |
+| `authdata` (0x30) | ❌ Not implemented | Always authenticated |
+| `confstrptr0-3` | ❌ Not implemented | — |
+| `nextdm` (0x1d) | ❌ Not implemented | — |
+| `dmcs2` (0x32) | ❌ Not implemented | — |
+| Hart arrays (`hawindowsel`/`hawindow`) | ❌ Not implemented | — |
+| `custom0-15` | ❌ Not implemented | — |
+| Multi-hart support | ✅ Implemented | Parameterized `p.harts`, per-hart buses, `hartSel` selection |
 ---
-
