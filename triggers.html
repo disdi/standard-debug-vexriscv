@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - Vexriscv Debug Support</title>
-        <base href="https://disdi.github.io/standard-debug-vexriscv/">
+        <title>Phase 1D - Vexriscv Debug Support</title>
 
 
         <!-- Custom HTML head -->
@@ -36,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-e9160ca2.js";
+            window.path_to_searchindex_js = "searchindex-b249bc8a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-ed843c0d.js"></script>
+        <script src="toc-7b63bbbf.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,13 +177,50 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
-
+                        <h1 id="triggers"><a class="header" href="#triggers">Triggers</a></h1>
+<h3 id="phase-1d-trigger-module"><a class="header" href="#phase-1d-trigger-module">Phase 1D: Trigger Module</a></h3>
+<hr>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Spec Feature (Chapter)</th><th>Vexriscv Debug Implementation</th><th>Implementation Details</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Ch 5: Trigger Module (hart-side CSRs)</strong></td><td></td><td></td></tr>
+<tr><td><code>tselect</code> (0x7A0)</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (lines 870-875): WARL index, parameterized <code>debugTriggers</code> (default 2)</td></tr>
+<tr><td><code>tinfo</code> (0x7A4)</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (line 878): reports type 2 (mcontrol) support</td></tr>
+<tr><td><code>tdata1</code> (0x7A1)</td><td>⚠️ Partial</td><td><code>CsrPlugin.scala</code> (lines 922-942): <code>type=2</code>, <code>dmode</code>, <code>execute</code>, <code>m/s/u</code>, <code>action</code>. Missing: <code>timing</code>, <code>select</code>, <code>sizelo/hi</code>, <code>maskmax</code>, <code>chain</code>, <code>match</code>, <code>load</code>, <code>store</code>, <code>hit</code></td></tr>
+<tr><td><code>tdata2</code> (0x7A2)</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (lines 944-953): 32-bit compare value, PC equality match</td></tr>
+<tr><td><code>tdata3</code> (0x7A3)</td><td>❌ Not implemented</td><td>—</td></tr>
+<tr><td><code>tcontrol</code> (0x7A5)</td><td>❌ Not implemented</td><td>No <code>mte</code>/<code>mpte</code></td></tr>
+<tr><td>Trigger type</td><td>⚠️ mcontrol (type 2) only</td><td>Legacy type 2, not type 6 (mcontrol6). Spec recommends type 6 for new implementations</td></tr>
+<tr><td>Match modes</td><td>⚠️ Equal only</td><td>Only <code>match=0</code> (equality). No napot, &gt;=, &lt;, mask modes</td></tr>
+<tr><td>Match targets</td><td>⚠️ Execute address only</td><td>Only <code>execute</code> bit implemented. No <code>load</code>/<code>store</code> data/address match</td></tr>
+<tr><td>Privilege filtering</td><td>✅ Implemented</td><td><code>m</code>, <code>s</code>, <code>u</code> bits with <code>privilegeHit</code> logic (lines 930-934)</td></tr>
+<tr><td><code>dmode</code> security</td><td>✅ Implemented</td><td><code>dmode</code> bit controls debug-only write access (line 925)</td></tr>
+<tr><td><code>action</code> field</td><td>⚠️ Partial</td><td>Register exists but only <code>action=1</code> (enter debug) used in match logic</td></tr>
+<tr><td>Trigger chaining</td><td>❌ Not implemented</td><td>No <code>chain</code> bit</td></tr>
+<tr><td><code>dcsr.cause=2</code> on trigger</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (line 892): sets <code>dcsr.cause := 2</code> on trigger hit</td></tr>
+<tr><td>Trigger hit → debug entry</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (lines 881-897): <code>decodeBreak</code> halts pipeline, enters debug mode</td></tr>
+<tr><td><code>mcontrol6</code> (type 6)</td><td>❌ Not implemented</td><td>Only legacy type 2 exists</td></tr>
+<tr><td><code>icount</code> (type 3)</td><td>❌ Not implemented</td><td>—</td></tr>
+<tr><td><code>itrigger</code>/<code>etrigger</code>/<code>tmexttrigger</code></td><td>❌ Not implemented</td><td>—</td></tr>
+<tr><td>Hardware breakpoints</td><td>⚠️ Spec-compliant but limited</td><td>Type 2 mcontrol with execute address match=0 only, privilege filtering, dmode security</td></tr>
+<tr><td><code>mcontext</code>/<code>scontext</code></td><td>❌ Not implemented</td><td>—</td></tr>
+<tr><td><strong>SoC Integration</strong></td><td></td><td></td></tr>
+<tr><td>DTM→DM→Hart wiring</td><td>✅ Implemented</td><td><code>DebugModuleFiber.scala</code> — multi-hart binding, clock-domain-safe pipelining</td></tr>
+<tr><td>Tilelink SBA bridge</td><td>✅ Implemented</td><td><code>makeSysbusTilelink()</code> in DebugModuleFiber</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="csr.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
 
                         <div style="clear: both"></div>
@@ -193,6 +229,9 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="csr.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
             </nav>
 
