@@ -11,6 +11,17 @@
 - [x] Implement WAIT response when `DebugBus.cmd` is not ready (DM busy)
 - [x] Implement FAULT response when `DebugBus.rsp.error` is set
 
+---
+
+**Code Repository :**
+- pythondata-cpu-vexriscv_smp - https://github.com/disdi/pythondata-cpu-vexriscv_smp/tree/phase2c
+
+OR
+
+Update submodules in [pythondata-cpu-vexriscv_smp](https://github.com/disdi/pythondata-cpu-vexriscv_smp) to below :
+
+- SpinalHdl - https://github.com/disdi/SpinalHDL/tree/phase2c
+- VexRiscv - https://github.com/disdi/VexRiscv/tree/phase2c
 
 | Artifact | Path |
 |---|---|
@@ -19,8 +30,7 @@
 | Testbench (incl. `SwdDmTestTop`) | `EXT/VexRiscv/src/test/scala/vexriscv/DebugSwdDmTest.scala` |
 | Run | `cd EXT/VexRiscv && sbt -batch "testOnly vexriscv.DebugSwdDmTest"` (all: `"testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest vexriscv.DebugSwdDmTest"`) |
 
-`EXT` = `pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext`. Still zero
-LiteX involvement.
+`EXT` = `pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext`. Still zero LiteX involvement.
 
 ---
 
@@ -113,7 +123,7 @@ in the 1b suite (the real DM's factory never raises `error`).
 
 ---
 
-## 4. Verification — run it yourself
+## 4. Verification
 
 ```sh
 cd ~/fpga/pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext/VexRiscv
@@ -122,9 +132,6 @@ sbt -batch "testOnly vexriscv.DebugSwdDmTest"
 sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest vexriscv.DebugSwdDmTest"
 # expect: Tests: succeeded 25, failed 0, canceled 0, ignored 0, pending 0
 ```
-
-Toolchain caveats (Verilator ≥ 5.032 backend patches, stale `simWorkspace` after killed
-runs) unchanged from [Phase2A.md](Phase2A.md) §4.
 
 ## 5. Summary
 

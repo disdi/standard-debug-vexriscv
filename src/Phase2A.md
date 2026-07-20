@@ -16,6 +16,14 @@
 - [x] Implement line reset detection — 50+ clock cycles with SWDIO HIGH, followed by 2+ idle cycles (Sec B4.3.3)
 - [x] Start with SWD protocol version 1 (point-to-point); version 2 multi-drop support is optional; no ORUNDETECT
 
+---
+
+**Code Repository :**
+
+Update submodules in [pythondata-cpu-vexriscv_smp](https://github.com/disdi/pythondata-cpu-vexriscv_smp) to below :
+
+- SpinalHdl - https://github.com/disdi/SpinalHDL/tree/phase2a
+- VexRiscv - https://github.com/disdi/VexRiscv/tree/phase2a
 
 | Artifact | Path |
 |---|---|
@@ -341,20 +349,6 @@ Each test runs in a fresh sim (`compiled.doSim`) with reset applied, the stub fo
 | 8 | **write data parity error is flagged and recoverable** | Corrupted WDATA parity → commit fires with `parityOk=false` (WDATAERR material for 2B), data still delivered; **not** a line-level protocol error — the next read succeeds without line reset. |
 | 9 | **49 high cycles are not a line reset, 50 are** | The reset threshold exactly: from `ERROR`, 49 highs + idle leaves the target silent; 50 highs + idle restores it. (The bench breaks the run of 1s after the error header so the park bit can't pre-count toward the 50.) |
 
-Embedded in every test via the helpers: turnaround positions (`oe` window), LSB-first
-ordering, and the request-phase no-drive rule.
+Embedded in every test via the helpers: turnaround positions (`oe` window), LSB-first ordering, and the request-phase no-drive rule.
 
 ---
-
-## 4. Toolchain prerequisites
-
-- sbt + JDK + Verilator (SpinalSim shells out to the system `verilator`).
-- **Verilator ≥ 5.032 needs two local patches** in
-  `EXT/SpinalHDL/sim/src/main/scala/spinal/sim/VerilatorBackend.scala` (already applied in
-  this workspace): a null-guard in the generated `sc_time_stamp()` (Verilator now calls it
-  during model construction) and clearing the `thread_local` wrapper handle at
-  construction/destruction (else later `doSim` calls in the same JVM read freed memory —
-  symptoms: SIGSEGV at sim start, `%Error: Adding model when time is non-zero`).
-  Check they're present: `grep -c 'simHandle.*nullptr' .../VerilatorBackend.scala` → 2.
-- After killing an sbt run mid-build, delete `EXT/VexRiscv/simWorkspace` (the Verilator
-  binary cache can be left truncated and segfaults on load).

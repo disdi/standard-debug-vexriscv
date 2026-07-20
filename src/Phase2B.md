@@ -12,6 +12,16 @@
 - [x] Implement WAIT response logic — issued when AP/DP access is outstanding or AP read result not yet available (Sec B4.2.3)
 - [x] Consume `SwdDpWrite.parityOk` as WDATAERR sticky material (line-layer protocol error / line reset already handled in Phase 2A)
 
+---
+
+**Code Repository :**
+
+Update submodules in [pythondata-cpu-vexriscv_smp](https://github.com/disdi/pythondata-cpu-vexriscv_smp) to below :
+
+- SpinalHdl - https://github.com/disdi/SpinalHDL/tree/phase2b
+- VexRiscv - https://github.com/disdi/VexRiscv/tree/phase2b
+
+
 | Artifact | Path |
 |---|---|
 | RTL (`SwdDp`, `SwdPhyDp`, AP seam bundles) | `EXT/SpinalHDL/lib/src/main/scala/spinal/lib/cpu/riscv/debug/DebugTransportModuleSwd.scala` (same file as Phase 2A) |
@@ -223,14 +233,10 @@ embedded assertions — now exercised against the real DP.
 
 ---
 
-## 4. Verification — run it yourself
+## 4. Verification
 
 ```sh
 cd ~/fpga/pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext/VexRiscv
 sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest"
 # expect: Tests: succeeded 18, failed 0, canceled 0, ignored 0, pending 0
 ```
-
-Single test by substring: `sbt -batch 'testOnly vexriscv.DebugSwdDpTest -- -z "posted"'`.
-Toolchain caveats (Verilator ≥ 5.032 patches, stale `simWorkspace` after killed runs) are
-unchanged from [Phase2A.md](Phase2A.md) §4.
