@@ -1,0 +1,588 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Phase 2A - Vexriscv Debug Support</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-e96d0476.css">
+        <link rel="stylesheet" href="css/chrome-d279d366.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex-956ac11f.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-73279bd6.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Vexriscv Debug Support</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/disdi/standard-debug-vexriscv" title="Git repository" aria-label="Git repository">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="phase-2a--swd-protocol-state-machine-implementation--verification"><a class="header" href="#phase-2a--swd-protocol-state-machine-implementation--verification">Phase 2A — SWD Protocol State Machine: Implementation &amp; Verification</a></h1>
+<p><strong>Status:</strong> implemented and sim-verified.</p>
+<p><strong>Tasks</strong> :</p>
+<ul>
+<li><input disabled="" type="checkbox" checked=""> Define the internal 2A↔2B transaction seam first: <code>SwdDpCmd</code>/<code>SwdDpRsp</code>/<code>SwdDpWrite</code> flows so 2A is verifiable standalone against a stubbed DP</li>
+<li><input disabled="" type="checkbox" checked=""> Implement 2-wire physical interface on the <strong>target</strong>: <code>swclk</code> <strong>input</strong> (driven by probe) + <code>swdio</code> as <code>i</code>/<code>o</code>/<code>oe</code> (tristate/IOBUF at SoC level)</li>
+<li><input disabled="" type="checkbox" checked=""> Implement packet request parser — 8-bit frame: Start(1), APnDP(1), RnW(1), A<a href="2">2:3</a>, Parity(1), Stop(1), Park(1)</li>
+<li><input disabled="" type="checkbox" checked=""> Implement ACK response generator — 3-bit ACK[2:0]: OK(0b001), WAIT(0b010), FAULT(0b100) (ADIv6.0 Table B4-1). Transmitted LSB-first like all SWD data, so OK appears on the wire as <code>1,0,0</code> — do not confuse wire order with the register value</li>
+<li><input disabled="" type="checkbox" checked=""> Implement turnaround period management — direction change on SWDIO between host-driven and target-driven phases (Sec B4.1.3); fixed at 1 cycle (<code>DLCR.TURNROUND</code> unsupported)</li>
+<li><input disabled="" type="checkbox" checked=""> Implement WDATA phase — 33-bit host→target: WDATA[0:31] + parity (for write operations after OK ACK)</li>
+<li><input disabled="" type="checkbox" checked=""> Implement RDATA phase — 33-bit target→host: RDATA[0:31] + parity (for read operations after OK ACK)</li>
+<li><input disabled="" type="checkbox" checked=""> Implement even parity checker/generator — separate parity on packet request (4 bits: APnDP, RnW, A[2:3]) and data transfer (32 bits) (Sec B4.1.6)</li>
+<li><input disabled="" type="checkbox" checked=""> Implement LSB-first bit ordering for all data values (Sec B4.1.5)</li>
+<li><input disabled="" type="checkbox" checked=""> Accept idle cycles between transactions (Sec B4.1.4); back-to-back with zero idle also works</li>
+<li><input disabled="" type="checkbox" checked=""> Implement line reset detection — 50+ clock cycles with SWDIO HIGH, followed by 2+ idle cycles (Sec B4.3.3)</li>
+<li><input disabled="" type="checkbox" checked=""> Start with SWD protocol version 1 (point-to-point); version 2 multi-drop support is optional; no ORUNDETECT</li>
+</ul>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Artifact</th><th>Path</th></tr>
+</thead>
+<tbody>
+<tr><td>RTL</td><td><code>EXT/SpinalHDL/lib/src/main/scala/spinal/lib/cpu/riscv/debug/DebugTransportModuleSwd.scala</code></td></tr>
+<tr><td>Testbench</td><td><code>EXT/VexRiscv/src/test/scala/vexriscv/DebugSwdTest.scala</code></td></tr>
+<tr><td>Run</td><td><code>cd EXT/VexRiscv &amp;&amp; sbt -batch "testOnly vexriscv.DebugSwdTest"</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><code>EXT</code> = <code>pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext</code>. <code>EXT/VexRiscv/build.sbt</code> compiles <code>EXT/SpinalHDL</code> from source, so the RTL and
+testbench build in one sbt project with <strong>no LiteX involvement</strong>.</p>
+<hr>
+<h2 id="1-what-is-implemented--swdphy"><a class="header" href="#1-what-is-implemented--swdphy">1. What is implemented — <code>SwdPhy</code></a></h2>
+<p><code>SwdPhy</code> is the ARM ADI SW-DP <strong>line layer</strong> (ADIv6.0 §B4): it speaks the 2-wire protocol
+and terminates in a decoded-transaction seam. It contains no DP registers (Phase 2B) and no
+<code>DebugBus</code> bridge (Phase 2C).</p>
+<h3 id="11-io"><a class="header" href="#11-io">1.1 I/O</a></h3>
+<pre><code class="language-text">swdio.i  : in  Bool   -- SWDIO as driven by the probe
+swdio.o  : out Bool   -- SWDIO value when the target drives
+swdio.oe : out Bool   -- target output enable
+dp.cmd   : master Flow(SwdDpCmd)    -- decoded request        (2A -&gt; 2B)
+dp.rsp   : slave  Flow(SwdDpRsp)    -- ACK + read data        (2B -&gt; 2A)
+dp.wr    : master Flow(SwdDpWrite)  -- write commit           (2A -&gt; 2B)
+</code></pre>
+<ul>
+<li><strong>Clock = SWCLK.</strong> The component's implicit clock domain is the probe-driven SWCLK.
+The target samples <code>swdio.i</code> and updates <code>swdio.o</code>/<code>swdio.oe</code> on the <strong>rising edge</strong>,
+matching the OpenOCD bitbang model (host sets data while SWCLK is low, samples target
+data while low).</li>
+<li><strong>No <code>inout</code>.</strong> The tristate split (<code>i</code>/<code>o</code>/<code>oe</code>) is required because the cluster is a
+Verilog black box in LiteX.</li>
+</ul>
+<h3 id="12-the-2a2b-seam-three-flows"><a class="header" href="#12-the-2a2b-seam-three-flows">1.2 The 2A↔2B seam (three flows)</a></h3>
+<p>A wire-protocol fact shapes the seam: <strong>a write's ACK is sent before the 33-bit WDATA
+phase</strong>, so write data cannot ride in the request.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flow</th><th>Fired</th><th>Payload</th></tr>
+</thead>
+<tbody>
+<tr><td><code>SwdDpCmd</code></td><td>one-cycle pulse on the packet-request park edge, iff parity/stop/park all pass</td><td><code>apNdp</code>, <code>rnw</code>, <code>addr = A[3:2]</code></td></tr>
+<tr><td><code>SwdDpRsp</code></td><td>must be presented by the DP <strong>within the turnaround cycle</strong> (an always-ready DP may simply hold it valid)</td><td><code>ack</code> (OK=001/WAIT=010/FAULT=100), <code>rdata</code></td></tr>
+<tr><td><code>SwdDpWrite</code></td><td>one-cycle pulse after the 33rd WDATA bit</td><td><code>data</code>, <code>parityOk</code> (false ⇒ WDATAERR material for 2B)</td></tr>
+</tbody>
+</table>
+</div>
+<p>The response is latched into a hold register on first sight (<code>rsp.valid</code> may be
+combinational off <code>cmd</code> or held continuously); ACK and RDATA are driven from the
+latched copy for the rest of the frame.</p>
+<h3 id="13-frame-timing-rising-edge-numbering"><a class="header" href="#13-frame-timing-rising-edge-numbering">1.3 Frame timing (rising-edge numbering)</a></h3>
+<p>Request bits are sampled at edges <code>e1..e8</code> (start, APnDP, RnW, A2, A3, parity, stop, park —
+LSB first). <code>cmd</code> fires at <code>e8</code>.</p>
+<p><strong>Read, ACK=OK</strong> (one turnaround each way, target keeps the line between ACK and RDATA):</p>
+<pre><code class="language-text">e1..e8   host request          (target oe=0)
+e9       turnaround            -&gt; target drives ACK[0] at e9
+e9..e11  ACK[0..2]
+e12..e43 RDATA[0..31]          (from rsp.rdata, LSB first)
+e44      even parity of RDATA
+e45      release (oe -&gt; 0)     turnaround back to host
+</code></pre>
+<p><strong>Write, ACK=OK</strong> (two turnarounds around the ACK — the bug the tests caught: sampling one
+edge early captures the turnaround as data bit 0):</p>
+<pre><code class="language-text">e1..e8   host request
+e9       turnaround            -&gt; target drives ACK[0]
+e9..e11  ACK[0..2]
+e12      release (oe -&gt; 0)     \  second turnaround: host takes the line,
+e13      turnaround bit period /  drives its first WDATA bit after it
+e14..e45 WDATA[0..31]          sampled LSB first into a shift register
+e46      parity bit            -&gt; dp.wr fires with data + parityOk verdict
+</code></pre>
+<p><strong>WAIT/FAULT</strong> (either direction): the data phase is skipped — after ACK[2] the target
+releases immediately and returns to idle. (No ORUNDETECT support, so this is unconditional.)</p>
+<h3 id="14-fsm"><a class="header" href="#14-fsm">1.4 FSM</a></h3>
+<p>States: <code>IDLE → HEADER → ACK → {READ_DATA | WR_TRN → WRITE_DATA | RELEASE} → IDLE</code>, plus
+<code>ERROR</code> and <code>RESET_WAIT</code> (power-up init is <code>RESET_WAIT</code>, so the target stays quiet until
+the line is seen low once).</p>
+<ul>
+<li><strong>Protocol error</strong> (request parity, stop≠0, park≠1): enter <code>ERROR</code> — the target stops
+driving and ignores all traffic until line reset (ADIv6.0 §B4.2.5).</li>
+<li><strong>Line reset detector</strong> (independent of the FSM): a saturating counter of consecutive
+<code>swdio.i == 1</code> samples while the target is not driving; at <strong>50</strong> it forces
+<code>RESET_WAIT</code> from <em>any</em> state (including <code>ERROR</code>), which falls to <code>IDLE</code> on the first
+low (idle) cycle. The counter is frozen/cleared while <code>oe=1</code> so target-driven phases
+can't fake a reset.</li>
+</ul>
+<h4 id="141-target-state-machine-for-one-frame-implementation-oriented"><a class="header" href="#141-target-state-machine-for-one-frame-implementation-oriented">1.4.1 Target state machine for one frame (implementation-oriented)</a></h4>
+<p>A practical encoding of Section B4.1–B4.2 from the specification for a <strong>single transaction</strong> on the target.</p>
+<p>This section has two layers:</p>
+<ol>
+<li><strong>§1.4.2 abstract diagram</strong> — phase names aligned with ADI figures (includes <code>TRN_H2T</code> and
+optional <code>OVERRUN_DATA</code>).</li>
+<li><strong>§1.4.3–§1.4.5 Phase 2A <code>SwdPhy</code></strong> — how that diagram maps onto the RTL enum and transitions in
+<code>DebugTransportModuleSwd.scala</code> (<code>case class SwdPhy</code>).</li>
+</ol>
+<hr>
+<h4 id="142-abstract-one-frame-fsm-spec-oriented"><a class="header" href="#142-abstract-one-frame-fsm-spec-oriented">1.4.2 Abstract one-frame FSM (spec-oriented)</a></h4>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/phase2a.png" alt="phase2a"><span class="img-wrapper"><img src="images/phase2a.png" alt="phase2a"></span></label></p>
+<hr>
+<h4 id="143-state-inventory--diagram-142--rtl"><a class="header" href="#143-state-inventory--diagram-142--rtl">1.4.3 State inventory — diagram §1.4.2 ↔ RTL</a></h4>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Diagram §1.4.2</th><th>RTL <code>EState</code></th><th>Role</th></tr>
+</thead>
+<tbody>
+<tr><td><code>IDLE</code></td><td><code>IDLE</code></td><td>Wait for Start; between frames (<code>oDrive := False</code>)</td></tr>
+<tr><td><code>HEADER</code></td><td><code>HEADER</code></td><td>LSB-first shift-in after Start; validate at park</td></tr>
+<tr><td><code>TRN_H2T</code></td><td><em>(no named state)</em></td><td><strong>Folded into first cycle of <code>ACK</code></strong></td></tr>
+<tr><td><code>ACK</code></td><td><code>ACK</code></td><td>Drive ACK[0..2] from <code>ackNow</code> / <code>rspHold</code> (<code>cnt</code> 0..2)</td></tr>
+<tr><td><code>READ_DATA</code></td><td><code>READ_DATA</code></td><td>RDATA[0:31] + even parity; keep <code>oe=1</code> after ACK</td></tr>
+<tr><td><code>WR_TRN</code></td><td><code>WR_TRN</code></td><td>Post-ACK turnaround before write (<code>oe=0</code>, 2 cycles)</td></tr>
+<tr><td><code>WRITE_DATA</code></td><td><code>WRITE_DATA</code></td><td>Sample WDATA + parity → <code>dp.wr</code></td></tr>
+<tr><td><code>RELEASE</code></td><td><code>RELEASE</code></td><td>Release after target-driven phase → <code>IDLE</code></td></tr>
+<tr><td><code>ERROR</code></td><td><code>ERROR</code></td><td>Protocol error: do not drive; ignore headers</td></tr>
+<tr><td><code>OVERRUN_DATA</code></td><td><strong>absent</strong></td><td>ORUNDETECT out of scope (WAIT/FAULT always skip data)</td></tr>
+<tr><td><em>(recovery)</em></td><td><code>RESET_WAIT</code></td><td>After line-reset hit; leave on first low → <code>IDLE</code></td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h4 id="144-transition-mapping-diagram--rtl"><a class="header" href="#144-transition-mapping-diagram--rtl">1.4.4 Transition mapping (diagram → RTL)</a></h4>
+<h4 id="idle--header--start-bit--1"><a class="header" href="#idle--header--start-bit--1"><code>IDLE → HEADER</code> — Start bit = 1</a></h4>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Diagram</th><th>RTL</th></tr>
+</thead>
+<tbody>
+<tr><td>Start sampled 1</td><td><code>when(dio) { state := HEADER; cnt := 0 }</code> in <code>IDLE</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>Start is <strong>not</strong> stored in <code>hdr</code>; it only opens the header window. Remaining bits are shifted in <code>HEADER</code>.</p>
+<h4 id="header--error-or-valid-exit"><a class="header" href="#header--error-or-valid-exit"><code>HEADER → ERROR</code> or valid exit</a></h4>
+<p>On park edge (<code>cnt === 6</code>), <code>hdr</code> holds APnDP…Stop and <code>dio</code> is Park:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Check</th><th>RTL</th><th>Spec</th></tr>
+</thead>
+<tbody>
+<tr><td>Even parity of APnDP, RnW, A2, A3</td><td><code>(apNdp ^ rnw ^ a2 ^ a3) === hdr(4)</code></td><td>B4.1.6 / B4.2.5</td></tr>
+<tr><td>Stop = 0</td><td><code>stopOk = !hdr(5)</code></td><td>B4.2.5</td></tr>
+<tr><td>Park = 1</td><td><code>dio</code> on that edge</td><td>B4.2.5</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>Fail → <code>ERROR</code> (silent until line reset).</li>
+<li>Pass → <code>cmdValid</code> pulse (<code>SwdDpCmd</code>: <code>apNdp</code>, <code>rnw</code>, <code>addr</code>) and <code>state := ACK</code><br>(“cmd accepted” on the diagram’s park edge).</li>
+</ul>
+<h4 id="where-is-diagram-trn_h2t"><a class="header" href="#where-is-diagram-trn_h2t">Where is diagram <code>TRN_H2T</code>?</a></h4>
+<p>There is <strong>no</strong> <code>TRN_H2T</code> state. Comment in RTL: <em>“next cycle is the turnaround”</em> after park, then <code>ACK</code> both:</p>
+<ol>
+<li>owns the host→target turnaround cycle (from the host’s view), and</li>
+<li>drives the three ACK bits.</li>
+</ol>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Edge</th><th>Diagram name</th><th>RTL</th></tr>
+</thead>
+<tbody>
+<tr><td>Park</td><td>end of <code>HEADER</code></td><td><code>HEADER</code> → schedule <code>ACK</code>, fire <code>cmd</code></td></tr>
+<tr><td>Next rising edge</td><td><code>TRN_H2T</code> / first ACK drive</td><td>First <code>ACK</code> cycle: <code>oe=1</code>, <code>ACK[0]</code></td></tr>
+<tr><td>Next two edges</td><td>rest of <code>ACK</code></td><td><code>ACK[1]</code>, <code>ACK[2]</code> (<code>cnt</code> 1, 2)</td></tr>
+</tbody>
+</table>
+</div>
+<p>So diagram <strong><code>TRN_H2T</code> + <code>ACK</code></strong> collapse into RTL <strong><code>ACK</code> with <code>cnt = 0,1,2</code></strong>. Same wire timing as Fig B4-1/B4-2; one fewer named state.</p>
+<h4 id="ack---after-three-ack-bits-cnt--2"><a class="header" href="#ack---after-three-ack-bits-cnt--2"><code>ACK → …</code> after three ACK bits (<code>cnt === 2</code>)</a></h4>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Diagram edge</th><th>RTL</th><th>Match?</th></tr>
+</thead>
+<tbody>
+<tr><td>OK ∧ read → <code>READ_DATA</code></td><td><code>ackNow === OK &amp;&amp; cmdPayload.rnw</code> → <code>READ_DATA</code></td><td>Exact</td></tr>
+<tr><td>OK ∧ write → <code>WR_TRN</code></td><td><code>ackNow === OK &amp;&amp; !rnw</code> → <code>WR_TRN</code></td><td>Exact</td></tr>
+<tr><td>≠OK, no overrun → <code>RELEASE</code></td><td>else → <code>RELEASE</code></td><td>Exact</td></tr>
+<tr><td>≠OK ∧ ORUNDETECT → <code>OVERRUN_DATA</code></td><td><strong>never</strong></td><td>By design (scope)</td></tr>
+</tbody>
+</table>
+</div>
+<p>ACK value comes from the <strong>2B seam</strong>, not sticky logic inside 2A:</p>
+<ul>
+<li><code>io.dp.rsp</code> → latched in <code>rspHold</code> when <code>valid</code></li>
+<li><code>ackNow = Mux(rsp.valid, rsp.ack, rspHold.ack)</code></li>
+<li>Encoded LSB-first on the wire: OK=<code>001</code>, WAIT=<code>010</code>, FAULT=<code>100</code></li>
+</ul>
+<h4 id="read-path--read_data--release--idle-fig-b4-2"><a class="header" href="#read-path--read_data--release--idle-fig-b4-2">Read path — <code>READ_DATA → RELEASE → IDLE</code> (Fig B4-2)</a></h4>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/read_operation.png" alt="Read Operation"><span class="img-wrapper"><img src="images/read_operation.png" alt="Read Operation"></span></label></p>
+<ul>
+<li>32 data bits LSB-first from <code>rspHold.rdata</code>, then even parity (<code>xorR</code>).</li>
+<li>No turnaround between ACK and RDATA (target keeps <code>oe=1</code>).</li>
+<li><code>RELEASE</code>: <code>oDrive := False</code>, then <code>IDLE</code> (trailing Trn / release).</li>
+</ul>
+<h4 id="write-path--wr_trn--write_data--idle-fig-b4-1"><a class="header" href="#write-path--wr_trn--write_data--idle-fig-b4-1">Write path — <code>WR_TRN → WRITE_DATA → IDLE</code> (Fig B4-1)</a></h4>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/write_operation.png" alt="Write Operation"><span class="img-wrapper"><img src="images/write_operation.png" alt="Write Operation"></span></label></p>
+<ul>
+<li><code>WR_TRN</code>: two cycles with <code>oe=0</code> (<code>cnt</code> 0 then 1) = second turnaround.</li>
+<li><code>WRITE_DATA</code>: shift in 32 bits + sample parity; fire <code>dp.wr</code> with <code>data</code> and <code>parityOk</code>.</li>
+<li>WDATA parity fail → <code>parityOk = false</code> (WDATAERR <strong>material for 2B</strong>), <strong>not</strong> protocol error.</li>
+<li>Return <strong>direct</strong> <code>WRITE_DATA → IDLE</code> (no <code>RELEASE</code>): host already owns the line. Diagram §1.4.2 also uses <code>WRITE_DATA --&gt; IDLE</code>.</li>
+</ul>
+<h4 id="error-and-line-reset"><a class="header" href="#error-and-line-reset"><code>ERROR</code> and line reset</a></h4>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Diagram §1.4.2</th><th>RTL</th></tr>
+</thead>
+<tbody>
+<tr><td><code>ERROR --&gt; ERROR</code> (ignore traffic)</td><td><code>ERROR</code>: <code>oDrive := False</code> only; no header parse</td></tr>
+<tr><td><code>ERROR --&gt; IDLE</code> on line reset</td><td><code>lineReset.hit</code> → <strong><code>RESET_WAIT</code></strong> → first low → <strong><code>IDLE</code></strong></td></tr>
+</tbody>
+</table>
+</div>
+<p>Line reset is <strong>orthogonal</strong> (overrides any state): ≥50 consecutive highs on <code>swdio.i</code> while <code>!oDrive</code>; counter frozen/cleared while target drives so ACK/RDATA cannot fake a reset.</p>
+<p><code>RESET_WAIT</code> is an <strong>RTL-only</strong> gate so the target does not accept Start until the line has gone idle after the reset burst. Diagram §1.4.2 draws a direct <code>ERROR → IDLE</code>; recovery contract is the same.</p>
+<hr>
+<h4 id="145-side-by-side-graph"><a class="header" href="#145-side-by-side-graph">1.4.5 Side-by-side graph</a></h4>
+<pre><code class="language-text">Diagram §1.4.2 (abstract)                 SwdPhy RTL
+───────────────────────                 ──────────
+
+[*] → IDLE                              RESET_WAIT → IDLE  (after first low)
+        │                                      │
+        │ Start=1                              │ dio=1
+        ▼                                      ▼
+     HEADER ──bad──► ERROR                  HEADER ──bad──► ERROR
+        │                                      │
+        │ good park                            │ good park (+ cmd pulse)
+        ▼                                      ▼
+    TRN_H2T  ─────────────────────────────►  (implicit; first ACK cycle)
+        │                                      │
+        ▼                                      ▼
+       ACK ──OK∧R──► READ_DATA ──► RELEASE    ACK ──OK∧R──► READ_DATA ──► RELEASE
+        │                 │                     │                 │
+        │ OK∧W            └────────► IDLE       │ OK∧W            └────────► IDLE
+        ▼                                      ▼
+     WR_TRN ──► WRITE_DATA ──► IDLE         WR_TRN ──► WRITE_DATA ──► IDLE
+        │                                      │
+        │ ≠OK (no overrun)                     │ ≠OK
+        ▼                                      ▼
+     RELEASE ──► IDLE                        RELEASE ──► IDLE
+        │
+        │ ≠OK ∧ ORUNDETECT
+        ▼
+   OVERRUN_DATA ──► IDLE                   (not implemented)
+
+  ERROR ──line reset──► IDLE               ERROR ──line reset──► RESET_WAIT ──low──► IDLE
+                                           (line reset also from any other state)
+</code></pre>
+<hr>
+<h2 id="2-how-the-testbench-works--debugswdtest"><a class="header" href="#2-how-the-testbench-works--debugswdtest">2. How the testbench works — <code>DebugSwdTest</code></a></h2>
+<h3 id="21-the-bench-is-the-probe"><a class="header" href="#21-the-bench-is-the-probe">2.1 The bench is the probe</a></h3>
+<p>SWCLK is the DUT clock, and the bench <strong>owns it</strong>: no <code>forkStimulus</code> — every SWCLK cycle is
+one call to <code>step(bit)</code>:</p>
+<pre><code class="language-text">fallingEdge(); set swdio.i = bit;      // host updates while SWCLK low
+sample (swdio.o, swdio.oe);            // host samples while SWCLK low
+risingEdge();                          // target samples/updates
+</code></pre>
+<p>This reproduces OpenOCD's <code>bitbang_swd_exchange</code> exactly: a host-driven bit is sampled by
+the target at the rising edge ending its cycle; a target-driven bit read in cycle <em>k</em> is
+the value the target registered at edge <em>k−1</em>. All multi-bit values are sent/collected
+LSB first. <code>step</code> returns <code>(o, oe)</code>, so every helper can assert drive/release behavior
+per cycle.</p>
+<h3 id="22-always-ready-stub-dp"><a class="header" href="#22-always-ready-stub-dp">2.2 Always-ready stub DP</a></h3>
+<p>The DP behind the seam is a stub programmed by two vars (<code>stubAck</code>, <code>stubRdata</code>) and
+observed through two queues (<code>cmds</code> — decoded requests, <code>wrs</code> — write commits with the
+parity verdict). A forked thread runs every sampling:</p>
+<ul>
+<li><strong>holds <code>rsp.valid</code> true continuously</strong> with the programmed ack/rdata, and</li>
+<li>records <code>cmd</code>/<code>wr</code> pulses into the queues.</li>
+</ul>
+<p>The always-ready shape is deliberate: the ADI contract requires the DP to answer within
+the turnaround cycle. An earlier stub that <em>reacted</em> to <code>cmd.valid</code> from a sim thread
+arrived one clock late nondeterministically (SpinalSim thread-scheduling race) and produced
+flaky all-zero ACKs — the always-valid response is both race-free and the honest model of
+the combinational 2B register file.</p>
+<h3 id="23-transaction-helpers-assertions-built-in"><a class="header" href="#23-transaction-helpers-assertions-built-in">2.3 Transaction helpers (assertions built in)</a></h3>
+<ul>
+<li><code>header(...)</code> — sends the 8-bit request; can inject <code>flipParity</code> / <code>badStop</code> / <code>badPark</code>;
+asserts the target never drives during the request.</li>
+<li><code>readAck()</code> — collects ACK[0..2]; asserts <code>oe</code> on all three bits.</li>
+<li><code>transactRead(...)</code> — request → trn → ACK; on OK collects 33 target bits asserting <code>oe</code>
+throughout, <strong>recomputes and checks even parity</strong>, then asserts release on the trailing
+turnaround. On WAIT/FAULT asserts the very next cycle is undriven (data phase skipped).</li>
+<li><code>transactWrite(...)</code> — request → trn → ACK; on OK asserts release for the second
+turnaround, then drives 33 bits (optionally with <code>flipDataParity</code>). On WAIT/FAULT same
+skip assertion as reads.</li>
+<li><code>lineReset()</code> — 52 high cycles + 2 idle; <code>idle(n)</code> / <code>ones(n)</code> primitives.</li>
+</ul>
+<p>Each test runs in a fresh sim (<code>compiled.doSim</code>) with reset applied, the stub forked, and
+4 idle cycles before the body.</p>
+<hr>
+<h2 id="3-what-each-test-verifies"><a class="header" href="#3-what-each-test-verifies">3. What each test verifies</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>#</th><th>Test</th><th>Verifies</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td><strong>write reaches stub bit-exact</strong></td><td>Full OK write frame: decoded <code>cmd</code> fields <code>(apNdp=0, rnw=0, A[3:2]=2)</code> reach the stub; <code>0xCAFE1234</code> arrives in the commit bit-exact with <code>parityOk=true</code>. Proves WDATA sampling starts after the <em>second</em> turnaround (this test caught the off-by-one that received <code>data &lt;&lt; 1</code>).</td></tr>
+<tr><td>2</td><td><strong>read returns stub data bit-exact with parity</strong></td><td>Full OK read frame: <code>0x12345678</code> returned LSB-first with correct even parity; <code>cmd</code> decoded as <code>(apNdp=1, rnw=1, addr=1)</code>; target drives ACK+33 data bits and releases on the trailing turnaround.</td></tr>
+<tr><td>3</td><td><strong>DPIDR smoke read</strong></td><td>The §6.6 step 1 exit smoke test: DP read at <code>A[3:2]=00</code> returns the stub's DPIDR constant — the exact transaction OpenOCD issues first after line reset.</td></tr>
+<tr><td>4</td><td><strong>header parity error silences target until line reset</strong></td><td>Request-parity error → <code>ERROR</code>: target undriven for the error frame <em>and</em> for a subsequent well-formed request; no <code>cmd</code> ever reaches the DP; full line reset restores normal operation (verified by a clean read after).</td></tr>
+<tr><td>5</td><td><strong>stop bit error silences target until line reset</strong></td><td>Same protocol-error contract triggered via stop≠0; recovery verified with a clean write.</td></tr>
+<tr><td>6</td><td><strong>WAIT and FAULT skip the data phase</strong></td><td>ACK=WAIT then FAULT for both read and write: correct 3-bit ACK serialization (LSB first), line released immediately after ACK[2] (no data phase), no write commits, and a following OK read works with no reset needed. Also checks all 4 requests still reached the DP (<code>cmds.size == 4</code>).</td></tr>
+<tr><td>7</td><td><strong>back-to-back transactions without idle cycles</strong></td><td>A new request may start on the cycle right after the previous frame ends (write→read with zero idle); both transactions complete bit-exact.</td></tr>
+<tr><td>8</td><td><strong>write data parity error is flagged and recoverable</strong></td><td>Corrupted WDATA parity → commit fires with <code>parityOk=false</code> (WDATAERR material for 2B), data still delivered; <strong>not</strong> a line-level protocol error — the next read succeeds without line reset.</td></tr>
+<tr><td>9</td><td><strong>49 high cycles are not a line reset, 50 are</strong></td><td>The reset threshold exactly: from <code>ERROR</code>, 49 highs + idle leaves the target silent; 50 highs + idle restores it. (The bench breaks the run of 1s after the error header so the park bit can't pre-count toward the 50.)</td></tr>
+</tbody>
+</table>
+</div>
+<p>Embedded in every test via the helpers: turnaround positions (<code>oe</code> window), LSB-first
+ordering, and the request-phase no-drive rule.</p>
+<hr>
+<h2 id="4-toolchain-prerequisites"><a class="header" href="#4-toolchain-prerequisites">4. Toolchain prerequisites</a></h2>
+<ul>
+<li>sbt + JDK + Verilator (SpinalSim shells out to the system <code>verilator</code>).</li>
+<li><strong>Verilator ≥ 5.032 needs two local patches</strong> in
+<code>EXT/SpinalHDL/sim/src/main/scala/spinal/sim/VerilatorBackend.scala</code> (already applied in
+this workspace): a null-guard in the generated <code>sc_time_stamp()</code> (Verilator now calls it
+during model construction) and clearing the <code>thread_local</code> wrapper handle at
+construction/destruction (else later <code>doSim</code> calls in the same JVM read freed memory —
+symptoms: SIGSEGV at sim start, <code>%Error: Adding model when time is non-zero</code>).
+Check they're present: <code>grep -c 'simHandle.*nullptr' .../VerilatorBackend.scala</code> → 2.</li>
+<li>After killing an sbt run mid-build, delete <code>EXT/VexRiscv/simWorkspace</code> (the Verilator
+binary cache can be left truncated and segfaults on load).</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="triggers.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="Phase2B.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="triggers.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="Phase2B.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-09f2665d.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-609e4cb8.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Phase 1C - Vexriscv Debug Support</title>
+        <title>Phase 2C - Vexriscv Debug Support</title>
 
 
         <!-- Custom HTML head -->
@@ -177,46 +177,138 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="csr-register"><a class="header" href="#csr-register">CSR Register</a></h1>
-<h3 id="phase-1c-debug-csrs-dcsr-dpc"><a class="header" href="#phase-1c-debug-csrs-dcsr-dpc">Phase 1C: Debug CSRs (dcsr, dpc)</a></h3>
-<hr>
+                        <h1 id="phase-2c--dmi-gateway-clock-crossing--debugmodule-integration"><a class="header" href="#phase-2c--dmi-gateway-clock-crossing--debugmodule-integration">Phase 2C — DMI Gateway, Clock Crossing &amp; DebugModule Integration</a></h1>
+<p><strong>Status:</strong> implemented and sim-verified.</p>
+<p><strong>Tasks:</strong></p>
+<ul>
+<li><input disabled="" type="checkbox" checked=""> Map AP read/write operations to <code>DebugBus.cmd</code> (same <code>DebugCmd</code> interface used by JTAG DTM)</li>
+<li><input disabled="" type="checkbox" checked=""> Implement AP address decoding — translate <code>SELECT.ADDR</code> + <code>A[3:2]</code> to DMI address for <code>DebugBus.cmd.address</code></li>
+<li><input disabled="" type="checkbox" checked=""> Implement posted AP reads — first AP read returns UNKNOWN data; result available on next AP read or RDBUFF read (Sec B4.2.2)</li>
+<li><input disabled="" type="checkbox" checked=""> Wire <code>DebugBus.rsp</code> to RDATA output and ACK generation</li>
+<li><input disabled="" type="checkbox" checked=""> Handle cross-clock-domain between SWD clock (SWCLK) and debug clock domain (reuse <code>ccToggle</code> pattern from JTAG DTM)</li>
+<li><input disabled="" type="checkbox" checked=""> Implement WAIT response when <code>DebugBus.cmd</code> is not ready (DM busy)</li>
+<li><input disabled="" type="checkbox" checked=""> Implement FAULT response when <code>DebugBus.rsp.error</code> is set</li>
+</ul>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Spec Feature (Chapter)</th><th>Vexriscv Debug Implementation</th><th>Implementation Details</th></tr>
+<tr><th>Artifact</th><th>Path</th></tr>
 </thead>
 <tbody>
-<tr><td><strong>Ch 4: Core Debug (hart-side CSRs)</strong></td><td></td><td></td></tr>
-<tr><td>Halt/Resume</td><td>✅ <code>DebugHartBus</code> + <code>CsrPlugin</code></td><td><code>CsrPlugin.scala</code> (line 702+): <code>running</code> flag, <code>DebugHartBus</code> wiring, halt/resume handshake</td></tr>
-<tr><td>Single-step</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (lines 807-845): <code>dcsr.step</code> with full FSM (IDLE→SINGLE→WAIT), timeout/redo handling</td></tr>
-<tr><td><code>dcsr</code> (0x7B0)</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (lines 792-851): <code>prv</code>, <code>step</code>, <code>nmip</code>, <code>mprven</code>, <code>cause</code>, <code>stoptime</code>, <code>stopcount</code>, <code>stepie</code>, <code>ebreakm/s/u</code>, <code>xdebugver=4</code></td></tr>
-<tr><td><code>dpc</code> (0x7B1)</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (line 791): <code>Reg(UInt(32 bits))</code>, read/write via <code>rw(CSR.DPC, dpc)</code></td></tr>
-<tr><td><code>dscratch0</code> (0x7B2)</td><td>❌ Not implemented</td><td>—</td></tr>
-<tr><td><code>dscratch1</code> (0x7B3)</td><td>❌ Not implemented</td><td>—</td></tr>
-<tr><td>Debug mode entry</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (lines 1426-1443): saves PC→<code>dpc</code>, sets <code>dcsr.cause</code> (1=ebreak, 3=haltreq, 4=step), saves privilege→<code>dcsr.prv</code>, enters M-mode</td></tr>
-<tr><td>Debug mode exit (resume)</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (lines 1488-1498): jumps to <code>dpc</code>, restores privilege from <code>dcsr.prv</code>, via <code>DebugHartBus.resume</code></td></tr>
-<tr><td>Halt cause reporting</td><td>✅ Implemented</td><td><code>dcsr.cause</code>: 1 (ebreak), 2 (trigger), 3 (haltreq), 4 (step)</td></tr>
-<tr><td><code>dcsr.ebreakm/s/u</code></td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (lines 1372-1377): per-privilege ebreak→debug detection</td></tr>
-<tr><td><code>dcsr.stoptime</code></td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (line 866): <code>stoptime</code> output gated by <code>debugMode</code></td></tr>
-<tr><td><code>dcsr.stopcount</code></td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (line 1176): <code>mcycle</code> increment gated by <code>!debugMode || !stopcount</code></td></tr>
-<tr><td><code>dcsr.stepie</code></td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (line 1315): interrupts cleared when <code>step &amp;&amp; !stepie</code></td></tr>
-<tr><td>Interrupt inhibition in debug</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (line 721): <code>inhibateInterrupts()</code> when <code>debugMode</code></td></tr>
-<tr><td>CSR access protection (0x7Bx)</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (line 1718): blocks non-debug access to 0x7B0-0x7BF</td></tr>
-<tr><td><code>DebugHartBus</code> wiring</td><td>✅ Implemented</td><td><code>CsrPlugin.scala</code> (lines 704-789): instruction injection, data CSR, all hartToDm/dmToHart signals</td></tr>
-<tr><td>Reset control</td><td>✅ <code>dmcontrol.ndmreset</code> → <code>io.ndmreset</code></td><td>Both implementations provide ndmreset</td></tr>
+<tr><td>RTL (<code>SwdDmiGateway</code>, <code>DebugTransportModuleSwd</code>)</td><td><code>EXT/SpinalHDL/lib/src/main/scala/spinal/lib/cpu/riscv/debug/DebugTransportModuleSwd.scala</code> (same file as 2A/2B)</td></tr>
+<tr><td>Fiber hook (<code>withSwdTransport()</code>)</td><td><code>EXT/SpinalHDL/lib/src/main/scala/spinal/lib/cpu/riscv/debug/DebugModuleFiber.scala</code></td></tr>
+<tr><td>Testbench (incl. <code>SwdDmTestTop</code>)</td><td><code>EXT/VexRiscv/src/test/scala/vexriscv/DebugSwdDmTest.scala</code></td></tr>
+<tr><td>Run</td><td><code>cd EXT/VexRiscv &amp;&amp; sbt -batch "testOnly vexriscv.DebugSwdDmTest"</code> (all: <code>"testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest vexriscv.DebugSwdDmTest"</code>)</td></tr>
 </tbody>
 </table>
 </div>
+<p><code>EXT</code> = <code>pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext</code>. Still zero
+LiteX involvement.</p>
 <hr>
+<h2 id="1-what-is-implemented"><a class="header" href="#1-what-is-implemented">1. What is implemented</a></h2>
+<h3 id="11-swddmigateway--the-risc-v-dmi-gateway-ap"><a class="header" href="#11-swddmigateway--the-risc-v-dmi-gateway-ap">1.1 <code>SwdDmiGateway</code> — the RISC-V DMI gateway AP</a></h3>
+<p>Sits behind the 2B AP seam (<code>SwdApCmd</code>/<code>SwdApRsp</code>) and drives a <code>DebugBus</code> master —
+the <strong>same <code>DebugCmd</code>/<code>DebugRsp</code> interface the JTAG DTM produces</strong>, which is the whole
+point of the transport-agnostic design.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>AP <code>A[3:2]</code></th><th>Register</th><th>Access</th><th>Behavior</th></tr>
+</thead>
+<tbody>
+<tr><td><code>00</code></td><td><code>AP_IDR</code></td><td>RO</td><td>identification constant (default <code>0x74726976</code> "triv") — completes locally in 1 SWCLK cycle</td></tr>
+<tr><td><code>01</code></td><td><code>DMI_ADDR</code></td><td>RW</td><td>latches the 7-bit DMI word address; readable back — local</td></tr>
+<tr><td><code>10</code></td><td><code>DMI_DATA</code></td><td>RW</td><td>performs the <code>DebugBus</code> transaction at <code>DMI_ADDR</code> (RnW from the SWD packet) — crosses domains</td></tr>
+<tr><td><code>11</code></td><td><code>POSTED_READ</code></td><td>RO</td><td>last completed DMI <strong>read</strong> result (RDBUFF semantics) — local</td></tr>
+</tbody>
+</table>
+</div>
+<p>Writes to RO registers complete OK with no effect. <code>SELECT.APSEL</code> is not decoded
+(single-AP design). AP reads launch at the request (posted, per 2B); AP writes launch at
+the WDATA commit carrying the data.</p>
+<h3 id="12-clock-crossing--the-jtag-dtm-pattern-reused"><a class="header" href="#12-clock-crossing--the-jtag-dtm-pattern-reused">1.2 Clock crossing — the JTAG DTM pattern, reused</a></h3>
+<p>The gateway is an <code>Area</code> with the same two-domain shape as <code>DebugTransportModuleJtag</code>:</p>
+<ul>
+<li><strong>cmd</strong> (SWCLK → debug): <code>dmiCmd.ccToggle(...).toStream.m2sPipe(crossClockData = true, holdPayload = true)</code> → <code>bus.cmd</code>. Stream backpressure from a busy DM simply extends the
+in-flight window — the DP's WAIT logic (2B) covers it.</li>
+<li><strong>rsp</strong> (debug → SWCLK): <code>bus.rsp.ccToggle(..., withOutputBufferedReset = false)</code> — the
+flag matters: the SWCLK domain is <strong>BOOT-reset</strong> (a 2-wire interface has no reset pin;
+line reset is the protocol-level reset), and a buffered reset cannot be synthesized into
+a BOOT domain (SpinalHDL asserts). Pop-side synchronizers boot-init instead.</li>
+<li><strong>Solicited-completion gating</strong> (<code>dmiPending</code> here, <code>apBusy</code> in 2B): only a response to
+an in-flight access completes anything.</li>
+</ul>
+<p>The DM responds on <code>DebugBus.rsp</code> for <strong>both</strong> reads and writes (<code>DebugBusSlaveFactory</code>
+stages every <code>cmd.fire</code>), so AP writes complete on the crossed response — no
+self-acknowledgment needed.</p>
+<h3 id="13-debugtransportmoduleswd--the-full-transport"><a class="header" href="#13-debugtransportmoduleswd--the-full-transport">1.3 <code>DebugTransportModuleSwd</code> — the full transport</a></h3>
+<p>SWD pins → <code>SwdPhy</code> (2A) → <code>SwdDp</code> (2B) → <code>SwdDmiGateway</code> (2C) → <code>DebugBus</code>. The SWD side
+elaborates under <code>ClockDomain(swclk, resetKind = BOOT)</code>; the <code>DebugBus</code> side under the
+provided <code>debugCd</code>. This is the SWD counterpart of <code>DebugTransportModuleJtagTap</code>.</p>
+<p><code>DebugModuleFiber.withSwdTransport(dpidr, apIdr)</code> instantiates it alongside
+<code>withJtagTap()</code> — same one-transport-per-build rule (direct <code>io.ctrl</code> connection, no
+arbitration).</p>
+<h3 id="14-end-to-end-dmstatus-read-the-step-2-exit-graphically"><a class="header" href="#14-end-to-end-dmstatus-read-the-step-2-exit-graphically">1.4 End-to-end dmstatus read (the step-2 exit), graphically</a></h3>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/phase2c.png" alt="phase2c"><span class="img-wrapper"><img src="images/phase2c.png" alt="phase2c"></span></label></p>
+<hr>
+<h2 id="2-testbench--debugswddmtest"><a class="header" href="#2-testbench--debugswddmtest">2. Testbench — <code>DebugSwdDmTest</code></a></h2>
+<ul>
+<li><strong>DUT = <code>SwdDmTestTop</code></strong>: the full transport + a real <code>DebugModule</code> (version 2, 1 hart,
+<code>progBufSize=2</code>, <code>datacount=1</code>) with a <strong>stubbed <code>DebugHartBus</code></strong> — running, never
+halted, <code>hartToDm</code>/<code>resume.rsp</code> idle.</li>
+<li><strong>Two genuinely asynchronous clocks</strong>: the shared <code>SwdHostDriver</code> bit-bangs SWCLK
+(bench-owned, via a <code>ClockDomain</code> handle over the pin) while <code>dut.clockDomain</code>
+free-runs via <code>forkStimulus</code> — DMI completion latency is variable by construction.</li>
+<li><strong>Host-style retry helpers</strong>: <code>apWriteRetry</code>/<code>apReadRetry</code>/<code>rdbuff</code> retry on WAIT with
+bounded attempts — the same loop a real OpenOCD target would run. <code>dmiRead</code>/<code>dmiWrite</code>
+compose them into DMI operations.</li>
+<li><strong>Failure forensics built in</strong>: on any unexpected ACK the harness reads CTRL/STAT and
+includes the sticky flags in the assertion message (<code>ackCheck</code>) — this is what cracked
+the phantom-completion bug (§4.2). The <code>sim(name, seed = …)</code> hook pins a failing seed
+for deterministic reproduction.</li>
+</ul>
+<h2 id="3-what-each-test-verifies"><a class="header" href="#3-what-each-test-verifies">3. What each test verifies</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>#</th><th>Test</th><th>Verifies</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td><strong>DPIDR reads through the assembled transport</strong></td><td>The full stack elaborates and runs: BOOT-domain phy, async clocks, fiber-style wiring — and the plain DP path still works.</td></tr>
+<tr><td>2</td><td><strong>AP IDR via posted read</strong></td><td>Gateway local completion path + 2B posted-read plumbing end-to-end (<code>AP_IDR</code> lands in RDBUFF).</td></tr>
+<tr><td>3</td><td><strong>DMI_ADDR write and readback</strong></td><td>The address latch: AP write commits (WDATA path through the gateway), AP read returns it.</td></tr>
+<tr><td>4</td><td><strong>dmstatus read over SWD — step 2 exit criterion</strong></td><td>The headline: <code>DMI_ADDR←0x11</code>, <code>DMI_DATA</code> read crosses to the DM and back; RDBUFF poll returns dmstatus with <code>version=2</code> and <code>authenticated=1</code>.</td></tr>
+<tr><td>5</td><td><strong>dmcontrol dmactive write and readback</strong></td><td>Full DMI <strong>write</strong> path into a real DM register (resets 0, reads back 1) — write launch at commit, crossed completion, subsequent read.</td></tr>
+<tr><td>6</td><td><strong>abstractauto write and readback</strong></td><td>A second, WARL-masked DM register round-trip (<code>0x18</code>, bits [0]/[17:16]) including clearing. (data0/progbuf cannot round-trip with a stubbed hart — see §4.3.)</td></tr>
+<tr><td>7</td><td><strong>POSTED_READ returns the last DMI read result</strong></td><td>The gateway's <code>lastRead</code> alias agrees with RDBUFF after a completed DMI read.</td></tr>
+</tbody>
+</table>
+</div>
+<p>WAIT responses are exercised implicitly on nearly every test by the retry helpers (the
+async completion latency makes WAIT occur naturally); FAULT-on-<code>rsp.error</code> was unit-tested
+in the 1b suite (the real DM's factory never raises <code>error</code>).</p>
+<hr>
+<h2 id="4-verification--run-it-yourself"><a class="header" href="#4-verification--run-it-yourself">4. Verification — run it yourself</a></h2>
+<pre><code class="language-sh">cd ~/fpga/pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext/VexRiscv
+sbt -batch "testOnly vexriscv.DebugSwdDmTest"
+# expect: Tests: succeeded 7, failed 0, canceled 0, ignored 0, pending 0
+sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest vexriscv.DebugSwdDmTest"
+# expect: Tests: succeeded 25, failed 0, canceled 0, ignored 0, pending 0
+</code></pre>
+<p>Toolchain caveats (Verilator ≥ 5.032 backend patches, stale <code>simWorkspace</code> after killed
+runs) unchanged from <a href="Phase2A.html">Phase2A.md</a> §4.</p>
+<h2 id="5-summary"><a class="header" href="#5-summary">5. Summary</a></h2>
+<p>Phases 2A–2C complete the <strong>target-side RTL</strong> of the SWD plan; the DebugBus now speaks SWD end-to-end in simulation.</p>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="dm.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="Phase2B.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="triggers.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="sys_int.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -226,11 +318,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="dm.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="Phase2B.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="triggers.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="sys_int.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

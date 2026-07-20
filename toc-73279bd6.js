@@ -8,7 +8,7 @@ class MDBookSidebarScrollbox extends HTMLElement {
         super();
     }
     connectedCallback() {
-        this.innerHTML = '<ol class="chapter"><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="title-page.html">Introduction</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="dtm_dmi.html"><strong aria-hidden="true">1.</strong> Phase 1A</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="dm.html"><strong aria-hidden="true">2.</strong> Phase 1B</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="csr.html"><strong aria-hidden="true">3.</strong> Phase 1C</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="triggers.html"><strong aria-hidden="true">4.</strong> Phase 1D</a></span></li></ol>';
+        this.innerHTML = '<ol class="chapter"><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="title-page.html">Introduction</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="dtm_dmi.html"><strong aria-hidden="true">1.</strong> Phase 1A</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="dm.html"><strong aria-hidden="true">2.</strong> Phase 1B</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="csr.html"><strong aria-hidden="true">3.</strong> Phase 1C</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="triggers.html"><strong aria-hidden="true">4.</strong> Phase 1D</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="Phase2A.html"><strong aria-hidden="true">5.</strong> Phase 2A</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="Phase2B.html"><strong aria-hidden="true">6.</strong> Phase 2B</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="Phase2C.html"><strong aria-hidden="true">7.</strong> Phase 2C</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="sys_int.html"><strong aria-hidden="true">8.</strong> Phase 3</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="veri_test.html"><strong aria-hidden="true">9.</strong> Phase 4</a></span></li><li class="chapter-item expanded "><span class="chapter-link-wrapper"><a href="docu.html"><strong aria-hidden="true">10.</strong> Phase 5</a></span></li></ol>';
         // Set the current, active page, and reveal it if it's hidden
         let current_page = document.location.href.toString().split('#')[0].split('?')[0];
         if (current_page.endsWith('/')) {
@@ -23,7 +23,8 @@ class MDBookSidebarScrollbox extends HTMLElement {
                 link.href = path_to_root + href;
             }
             // The 'index' page is supposed to alias the first chapter in the book.
-            if (link.href === current_page
+            // Check both with and without the '.html' suffix to be robust against pretty URLs
+            if (link.href.replace(/\.html$/, '') === current_page.replace(/\.html$/, '')
                 || i === 0
                 && path_to_root === ''
                 && current_page.endsWith('/index.html')) {
