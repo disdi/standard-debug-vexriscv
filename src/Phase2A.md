@@ -36,7 +36,7 @@ and terminates in a decoded-transaction seam. It contains no DP registers (Phase
 
 ### 1.1 I/O
 
-```
+```text
 swdio.i  : in  Bool   -- SWDIO as driven by the probe
 swdio.o  : out Bool   -- SWDIO value when the target drives
 swdio.oe : out Bool   -- target output enable
@@ -74,7 +74,7 @@ LSB first). `cmd` fires at `e8`.
 
 **Read, ACK=OK** (one turnaround each way, target keeps the line between ACK and RDATA):
 
-```
+```text
 e1..e8   host request          (target oe=0)
 e9       turnaround            -> target drives ACK[0] at e9
 e9..e11  ACK[0..2]
@@ -86,7 +86,7 @@ e45      release (oe -> 0)     turnaround back to host
 **Write, ACK=OK** (two turnarounds around the ACK — the bug the tests caught: sampling one
 edge early captures the turnaround as data bit 0):
 
-```
+```text
 e1..e8   host request
 e9       turnaround            -> target drives ACK[0]
 e9..e11  ACK[0..2]
@@ -129,38 +129,6 @@ This section has two layers:
 #### 1.4.2 Abstract one-frame FSM (spec-oriented)
 
 ![phase2a](images/phase2a.png)
-```mermaid
-stateDiagram-v2
-    direction LR
-
-    [*] --> IDLE
-
-    IDLE --> HEADER: Start bit sampled 1
-    HEADER --> ERROR: bad Stop/Park/parity
-    HEADER --> TRN_H2T: valid park edge\n(cmd accepted)
-
-    TRN_H2T --> ACK: drive ACK[0..2]
-
-    ACK --> RELEASE: ACK ≠ OK\nand not overrun data
-    ACK --> READ_DATA: ACK=OK ∧ read
-    ACK --> WR_TRN: ACK=OK ∧ write
-    ACK --> OVERRUN_DATA: ACK≠OK ∧ ORUNDETECT
-
-    READ_DATA --> RELEASE: after RDATA+parity
-    WR_TRN --> WRITE_DATA: second turnaround
-    WRITE_DATA --> IDLE: after WDATA+parity\n(check parity → WDATAERR)
-
-    OVERRUN_DATA --> IDLE
-    RELEASE --> IDLE: line released\n(host may idle or start next)
-
-    ERROR --> ERROR: ignore traffic
-    ERROR --> IDLE: line reset\n(and leave protocol-error/lockout)
-
-    note right of IDLE
-        Idle: SWDIO low between frames,
-        or immediate next Start.
-    end note
-```
 
 ---
 
@@ -314,7 +282,7 @@ Diagram §1.4.2 (abstract)                 SwdPhy RTL
 SWCLK is the DUT clock, and the bench **owns it**: no `forkStimulus` — every SWCLK cycle is
 one call to `step(bit)`:
 
-```
+```text
 fallingEdge(); set swdio.i = bit;      // host updates while SWCLK low
 sample (swdio.o, swdio.oe);            // host samples while SWCLK low
 risingEdge();                          // target samples/updates

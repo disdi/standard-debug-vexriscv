@@ -31,7 +31,7 @@ LiteX involvement.
 `SwdDp` sits behind the Phase 2A seam (`SwdDpCmd`/`SwdDpRsp`/`SwdDpWrite`, consumed as
 slave flows) and exposes a **new AP seam** toward Phase 2C:
 
-```
+```text
 ap.cmd : master Flow(SwdApCmd)   -- rnw, addr = A[3:2], apSel = SELECT[31:24], wdata
 ap.rsp : slave  Flow(SwdApRsp)   -- error, data (completion; test-controlled latency)
 ```
@@ -95,50 +95,10 @@ than wire states.
 #### 1.5.1 Abstract model (ADIv5.2 §B4.2 behavior)
 
 ![phase2b-1](images/phase2b-1.png)
-```mermaid
-flowchart TD
-    REQ["decoded request<br/>(APnDP, RnW, A[3:2])"] --> STK{"sticky flag set<br/>AND (AP or RDBUFF)?"}
-    STK -- yes --> FLT["ACK = FAULT<br/>access not performed"]
-    STK -- no --> BSY{"AP outstanding<br/>AND (AP or RDBUFF)?"}
-    BSY -- yes --> WT["ACK = WAIT<br/>access not performed"]
-    BSY -- no --> OK["ACK = OK"]
-
-    OK --> KIND{"access kind"}
-    KIND -- "DP read" --> DPRD["DPIDR / CTRL·STAT (bank 0) /<br/>RESEND / RDBUFF"]
-    KIND -- "AP read" --> APRD["return PREVIOUS result (posted)<br/>+ launch new AP read"]
-    KIND -- "write (DP or AP)" --> WACC["accept now —<br/>data arrives in WDATA phase"]
-
-    WACC --> PAR{"WDATA parity ok?"}
-    PAR -- no --> WDE["set WDATAERR<br/>drop the commit"]
-    PAR -- yes --> TGT{"write target"}
-    TGT -- ABORT --> CLR["clear stickies / DAPABORT"]
-    TGT -- "CTRL/STAT · SELECT" --> REGW["update DP register"]
-    TGT -- AP --> APW["launch AP write"]
-
-    CMPL["AP completion"] --> ERR{"error?"}
-    ERR -- yes --> SE["set STICKYERR"]
-    ERR -- no --> RB["read result -> read buffer<br/>(write completion: no data)"]
-```
 
 The most 2B-specific behavior — the posted AP read — as a sequence:
 
 ![phase2b-2](images/phase2b-2.png)
-```mermaid
-sequenceDiagram
-    participant H as Host (probe)
-    participant DP as SW-DP (SwdDp)
-    participant AP as AP layer (2C seam)
-    H->>DP: AP read @A (request)
-    DP-->>H: ACK=OK + RDATA = previous result
-    DP->>AP: launch read (ap.cmd)
-    Note over DP: busy
-    H->>DP: AP or RDBUFF access while busy
-    DP-->>H: ACK=WAIT
-    AP-->>DP: completion (ap.rsp.data)
-    Note over DP: rdBuffer := data, busy cleared
-    H->>DP: RDBUFF read
-    DP-->>H: ACK=OK + RDATA = data
-```
 
 #### 1.5.2 `SwdDp` RTL — the same flow in signals
 
@@ -146,34 +106,6 @@ sequenceDiagram
 WDATA commit, AP completion — no FSM, one decision per `cmd` pulse).
 
 ![phase2b-3](images/phase2b-3.png)
-```mermaid
-flowchart TD
-    subgraph REQPATH["request path — cmd.valid pulse, rsp combinational (within the turnaround)"]
-        CMD["cmd.valid<br/>(one-cycle pulse from SwdPhy)"] --> ACKMUX{"anySticky && gated?<br/>else apBusy && gated?"}
-        ACKMUX -- FAULT --> RSPF["rsp.ack = FAULT"]
-        ACKMUX -- WAIT --> RSPW["rsp.ack = WAIT"]
-        ACKMUX -- OK --> RSPO["rsp.ack = OK"]
-        RSPO --> RDMUX["rsp.rdata = isAp ? rdBuffer<br/>: dpReadData(addr, dpBankSel)"]
-        RSPO --> APRD2["apRdFire = isAp && rnw<br/>-> ap.cmd (read), apBusy := True"]
-        RSPO --> PEND["last.pendingWrite :=<br/>!rnw && ack==OK"]
-    end
-
-    subgraph COMMIT["commit path — wr.valid pulse (after WDATA)"]
-        WR["wr.valid"] --> PARC{"wr.parityOk?"}
-        PARC -- no --> WDE2["wdataErr := True<br/>(commit dropped)"]
-        PARC -- yes --> TGT2{"last.isApReg?"}
-        TGT2 -- yes --> APWF["apWrFire -> ap.cmd (write,<br/>wdata), apBusy := True"]
-        TGT2 -- no --> DPW["switch(last.addrReg):<br/>ABORT / CTRL·STAT / SELECT /<br/>TARGETSEL ignored"]
-    end
-
-    subgraph COMPL["completion path — ap.rsp.valid"]
-        RSP2["ap.rsp.valid"] --> DISC{"apDiscard?"}
-        DISC -- yes --> DROP["drop (DAPABORT'd);<br/>apBusy := False"]
-        DISC -- no --> ERR2{"ap.rsp.error?"}
-        ERR2 -- yes --> SE2["stickyErr := True"]
-        ERR2 -- no --> RB2["apWasRead ? rdBuffer := data<br/>: (write completion, no data)"]
-    end
-```
 
 #### 1.5.3 Element inventory — abstract ↔ RTL
 

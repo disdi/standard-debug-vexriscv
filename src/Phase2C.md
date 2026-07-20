@@ -74,23 +74,6 @@ arbitration).
 ### 1.4 End-to-end dmstatus read (the step-2 exit), graphically
 
 ![phase2c](images/phase2c.png)
-```mermaid
-sequenceDiagram
-    participant H as Host (probe)
-    participant DP as SW-DP (2A+2B, SWCLK)
-    participant GW as DMI gateway (2C)
-    participant DM as DebugModule (debug clk)
-    H->>DP: AP write DMI_ADDR = 0x11
-    DP-->>H: ACK=OK (commit after WDATA)
-    Note over GW: dmiAddr := 0x11 (local, 1 cycle)
-    H->>DP: AP read DMI_DATA
-    DP-->>H: ACK=OK + stale rdBuffer (posted)
-    GW->>DM: DebugBus.cmd read @0x11 (ccToggle -> Stream)
-    DM-->>GW: DebugBus.rsp = dmstatus (ccToggle back)
-    Note over DP: rdBuffer := dmstatus, busy cleared
-    H->>DP: DP read RDBUFF (WAIT while in flight, then OK)
-    DP-->>H: ACK=OK + dmstatus (version=2, authenticated=1)
-```
 
 ---
 
