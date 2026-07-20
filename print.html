@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-956ac11f.js";
+            window.path_to_searchindex_js = "searchindex-e7bbe43c.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -335,6 +335,13 @@
 <li><input disabled="" type="checkbox" checked=""> Accept idle cycles between transactions (Sec B4.1.4); back-to-back with zero idle also works</li>
 <li><input disabled="" type="checkbox" checked=""> Implement line reset detection — 50+ clock cycles with SWDIO HIGH, followed by 2+ idle cycles (Sec B4.3.3)</li>
 <li><input disabled="" type="checkbox" checked=""> Start with SWD protocol version 1 (point-to-point); version 2 multi-drop support is optional; no ORUNDETECT</li>
+</ul>
+<hr>
+<p><strong>Code Repository :</strong></p>
+<p>Update submodules in <a href="https://github.com/disdi/pythondata-cpu-vexriscv_smp">pythondata-cpu-vexriscv_smp</a> to below :</p>
+<ul>
+<li>SpinalHdl - https://github.com/disdi/SpinalHDL/tree/phase2a</li>
+<li>VexRiscv - https://github.com/disdi/VexRiscv/tree/phase2a</li>
 </ul>
 <div class="table-wrapper">
 <table>
@@ -654,23 +661,8 @@ skip assertion as reads.</li>
 </tbody>
 </table>
 </div>
-<p>Embedded in every test via the helpers: turnaround positions (<code>oe</code> window), LSB-first
-ordering, and the request-phase no-drive rule.</p>
-<hr>
-<h2 id="4-toolchain-prerequisites"><a class="header" href="#4-toolchain-prerequisites">4. Toolchain prerequisites</a></h2>
-<ul>
-<li>sbt + JDK + Verilator (SpinalSim shells out to the system <code>verilator</code>).</li>
-<li><strong>Verilator ≥ 5.032 needs two local patches</strong> in
-<code>EXT/SpinalHDL/sim/src/main/scala/spinal/sim/VerilatorBackend.scala</code> (already applied in
-this workspace): a null-guard in the generated <code>sc_time_stamp()</code> (Verilator now calls it
-during model construction) and clearing the <code>thread_local</code> wrapper handle at
-construction/destruction (else later <code>doSim</code> calls in the same JVM read freed memory —
-symptoms: SIGSEGV at sim start, <code>%Error: Adding model when time is non-zero</code>).
-Check they're present: <code>grep -c 'simHandle.*nullptr' .../VerilatorBackend.scala</code> → 2.</li>
-<li>After killing an sbt run mid-build, delete <code>EXT/VexRiscv/simWorkspace</code> (the Verilator
-binary cache can be left truncated and segfaults on load).</li>
-</ul>
-<div style="break-before: page; page-break-before: always;"></div>
+<p>Embedded in every test via the helpers: turnaround positions (<code>oe</code> window), LSB-first ordering, and the request-phase no-drive rule.</p>
+<hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="phase-2b--sw-dp-register-file-implementation--verification"><a class="header" href="#phase-2b--sw-dp-register-file-implementation--verification">Phase 2B — SW-DP Register File: Implementation &amp; Verification</a></h1>
 <p><strong>Status:</strong> implemented and sim-verified (Jul 2026)</p>
 <p><strong>Tasks:</strong></p>
@@ -683,6 +675,13 @@ binary cache can be left truncated and segfaults on load).</li>
 <li><input disabled="" type="checkbox" checked=""> Implement sticky error handling — FAULT response when any sticky flag is set; errors cleared only via ABORT register (Sec B1.2)</li>
 <li><input disabled="" type="checkbox" checked=""> Implement WAIT response logic — issued when AP/DP access is outstanding or AP read result not yet available (Sec B4.2.3)</li>
 <li><input disabled="" type="checkbox" checked=""> Consume <code>SwdDpWrite.parityOk</code> as WDATAERR sticky material (line-layer protocol error / line reset already handled in Phase 2A)</li>
+</ul>
+<hr>
+<p><strong>Code Repository :</strong></p>
+<p>Update submodules in <a href="https://github.com/disdi/pythondata-cpu-vexriscv_smp">pythondata-cpu-vexriscv_smp</a> to below :</p>
+<ul>
+<li>SpinalHdl - https://github.com/disdi/SpinalHDL/tree/phase2b</li>
+<li>VexRiscv - https://github.com/disdi/VexRiscv/tree/phase2b</li>
 </ul>
 <div class="table-wrapper">
 <table>
@@ -889,14 +888,11 @@ transactions with <code>APnDP</code> set accordingly.</p>
 protocol-error silence) is still enforced on every transaction by the shared driver's
 embedded assertions — now exercised against the real DP.</p>
 <hr>
-<h2 id="4-verification--run-it-yourself"><a class="header" href="#4-verification--run-it-yourself">4. Verification — run it yourself</a></h2>
+<h2 id="4-verification"><a class="header" href="#4-verification">4. Verification</a></h2>
 <pre><code class="language-sh">cd ~/fpga/pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext/VexRiscv
 sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest"
 # expect: Tests: succeeded 18, failed 0, canceled 0, ignored 0, pending 0
 </code></pre>
-<p>Single test by substring: <code>sbt -batch 'testOnly vexriscv.DebugSwdDpTest -- -z "posted"'</code>.
-Toolchain caveats (Verilator ≥ 5.032 patches, stale <code>simWorkspace</code> after killed runs) are
-unchanged from <a href="#phase-2a--swd-protocol-state-machine-implementation--verification">Phase2A.md</a> §4.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="phase-2c--dmi-gateway-clock-crossing--debugmodule-integration"><a class="header" href="#phase-2c--dmi-gateway-clock-crossing--debugmodule-integration">Phase 2C — DMI Gateway, Clock Crossing &amp; DebugModule Integration</a></h1>
 <p><strong>Status:</strong> implemented and sim-verified.</p>
@@ -909,6 +905,17 @@ unchanged from <a href="#phase-2a--swd-protocol-state-machine-implementation--ve
 <li><input disabled="" type="checkbox" checked=""> Handle cross-clock-domain between SWD clock (SWCLK) and debug clock domain (reuse <code>ccToggle</code> pattern from JTAG DTM)</li>
 <li><input disabled="" type="checkbox" checked=""> Implement WAIT response when <code>DebugBus.cmd</code> is not ready (DM busy)</li>
 <li><input disabled="" type="checkbox" checked=""> Implement FAULT response when <code>DebugBus.rsp.error</code> is set</li>
+</ul>
+<hr>
+<p><strong>Code Repository :</strong></p>
+<ul>
+<li>pythondata-cpu-vexriscv_smp - https://github.com/disdi/pythondata-cpu-vexriscv_smp/tree/phase2c</li>
+</ul>
+<p>OR</p>
+<p>Update submodules in <a href="https://github.com/disdi/pythondata-cpu-vexriscv_smp">pythondata-cpu-vexriscv_smp</a> to below :</p>
+<ul>
+<li>SpinalHdl - https://github.com/disdi/SpinalHDL/tree/phase2c</li>
+<li>VexRiscv - https://github.com/disdi/VexRiscv/tree/phase2c</li>
 </ul>
 <div class="table-wrapper">
 <table>
@@ -923,8 +930,7 @@ unchanged from <a href="#phase-2a--swd-protocol-state-machine-implementation--ve
 </tbody>
 </table>
 </div>
-<p><code>EXT</code> = <code>pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext</code>. Still zero
-LiteX involvement.</p>
+<p><code>EXT</code> = <code>pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext</code>. Still zero LiteX involvement.</p>
 <hr>
 <h2 id="1-what-is-implemented-1"><a class="header" href="#1-what-is-implemented-1">1. What is implemented</a></h2>
 <h3 id="11-swddmigateway--the-risc-v-dmi-gateway-ap"><a class="header" href="#11-swddmigateway--the-risc-v-dmi-gateway-ap">1.1 <code>SwdDmiGateway</code> — the RISC-V DMI gateway AP</a></h3>
@@ -1009,15 +1015,13 @@ for deterministic reproduction.</li>
 async completion latency makes WAIT occur naturally); FAULT-on-<code>rsp.error</code> was unit-tested
 in the 1b suite (the real DM's factory never raises <code>error</code>).</p>
 <hr>
-<h2 id="4-verification--run-it-yourself-1"><a class="header" href="#4-verification--run-it-yourself-1">4. Verification — run it yourself</a></h2>
+<h2 id="4-verification-1"><a class="header" href="#4-verification-1">4. Verification</a></h2>
 <pre><code class="language-sh">cd ~/fpga/pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext/VexRiscv
 sbt -batch "testOnly vexriscv.DebugSwdDmTest"
 # expect: Tests: succeeded 7, failed 0, canceled 0, ignored 0, pending 0
 sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest vexriscv.DebugSwdDmTest"
 # expect: Tests: succeeded 25, failed 0, canceled 0, ignored 0, pending 0
 </code></pre>
-<p>Toolchain caveats (Verilator ≥ 5.032 backend patches, stale <code>simWorkspace</code> after killed
-runs) unchanged from <a href="#phase-2a--swd-protocol-state-machine-implementation--verification">Phase2A.md</a> §4.</p>
 <h2 id="5-summary"><a class="header" href="#5-summary">5. Summary</a></h2>
 <p>Phases 2A–2C complete the <strong>target-side RTL</strong> of the SWD plan; the DebugBus now speaks SWD end-to-end in simulation.</p>
 <div style="break-before: page; page-break-before: always;"></div>

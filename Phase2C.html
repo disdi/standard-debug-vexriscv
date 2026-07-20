@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-956ac11f.js";
+            window.path_to_searchindex_js = "searchindex-e7bbe43c.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -189,6 +189,17 @@
 <li><input disabled="" type="checkbox" checked=""> Implement WAIT response when <code>DebugBus.cmd</code> is not ready (DM busy)</li>
 <li><input disabled="" type="checkbox" checked=""> Implement FAULT response when <code>DebugBus.rsp.error</code> is set</li>
 </ul>
+<hr>
+<p><strong>Code Repository :</strong></p>
+<ul>
+<li>pythondata-cpu-vexriscv_smp - https://github.com/disdi/pythondata-cpu-vexriscv_smp/tree/phase2c</li>
+</ul>
+<p>OR</p>
+<p>Update submodules in <a href="https://github.com/disdi/pythondata-cpu-vexriscv_smp">pythondata-cpu-vexriscv_smp</a> to below :</p>
+<ul>
+<li>SpinalHdl - https://github.com/disdi/SpinalHDL/tree/phase2c</li>
+<li>VexRiscv - https://github.com/disdi/VexRiscv/tree/phase2c</li>
+</ul>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -202,8 +213,7 @@
 </tbody>
 </table>
 </div>
-<p><code>EXT</code> = <code>pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext</code>. Still zero
-LiteX involvement.</p>
+<p><code>EXT</code> = <code>pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext</code>. Still zero LiteX involvement.</p>
 <hr>
 <h2 id="1-what-is-implemented"><a class="header" href="#1-what-is-implemented">1. What is implemented</a></h2>
 <h3 id="11-swddmigateway--the-risc-v-dmi-gateway-ap"><a class="header" href="#11-swddmigateway--the-risc-v-dmi-gateway-ap">1.1 <code>SwdDmiGateway</code> — the RISC-V DMI gateway AP</a></h3>
@@ -288,15 +298,13 @@ for deterministic reproduction.</li>
 async completion latency makes WAIT occur naturally); FAULT-on-<code>rsp.error</code> was unit-tested
 in the 1b suite (the real DM's factory never raises <code>error</code>).</p>
 <hr>
-<h2 id="4-verification--run-it-yourself"><a class="header" href="#4-verification--run-it-yourself">4. Verification — run it yourself</a></h2>
+<h2 id="4-verification"><a class="header" href="#4-verification">4. Verification</a></h2>
 <pre><code class="language-sh">cd ~/fpga/pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext/VexRiscv
 sbt -batch "testOnly vexriscv.DebugSwdDmTest"
 # expect: Tests: succeeded 7, failed 0, canceled 0, ignored 0, pending 0
 sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest vexriscv.DebugSwdDmTest"
 # expect: Tests: succeeded 25, failed 0, canceled 0, ignored 0, pending 0
 </code></pre>
-<p>Toolchain caveats (Verilator ≥ 5.032 backend patches, stale <code>simWorkspace</code> after killed
-runs) unchanged from <a href="Phase2A.html">Phase2A.md</a> §4.</p>
 <h2 id="5-summary"><a class="header" href="#5-summary">5. Summary</a></h2>
 <p>Phases 2A–2C complete the <strong>target-side RTL</strong> of the SWD plan; the DebugBus now speaks SWD end-to-end in simulation.</p>
 
