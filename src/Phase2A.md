@@ -136,7 +136,7 @@ This section has two layers:
 
 #### 1.4.2 Abstract one-frame FSM (spec-oriented)
 
-![phase2a](images/phase2a.png)
+![phase2a](images/phase2a.svg)
 
 ---
 
