@@ -1,5 +1,5 @@
 [book]
-authors = ["Glyn Normington"]
+authors = ["Saket Sinha"]
 language = "en"
 src = "src"
 title = "Vexriscv Debug Support"
