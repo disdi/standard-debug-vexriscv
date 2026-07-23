@@ -1,6 +1,6 @@
 # Debug Transport Module 
 
-### Phase 3: System Integration
+### Phase 1a: JTAG System Integration
 
 
 ---
