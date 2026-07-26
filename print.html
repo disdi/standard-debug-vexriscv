@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4d65906b.js";
+            window.path_to_searchindex_js = "searchindex-e39a6753.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -188,7 +188,7 @@
 <li><a href="#phase-2a--swd-protocol-state-machine-implementation--verification">Phase 2A</a> SWD protocol state machine (<code>SwdPhy</code>)</li>
 <li><a href="#phase-2b--sw-dp-register-file-implementation--verification">Phase 2B</a> SW-DP register file (<code>SwdDp</code>)</li>
 <li><a href="#phase-2c--dmi-gateway-clock-crossing--debugmodule-integration">Phase 2C</a> DMI gateway + clock crossing</li>
-<li><a href="#integration">Phase 3</a> Integration</li>
+<li><a href="#system-integration--swd">Phase 3</a> Integration</li>
 <li><a href="#testing">Phase 4</a> Testing</li>
 <li><a href="#documentation">Phase 5</a> Documentation</li>
 </ul>
@@ -1149,17 +1149,238 @@ sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest vexriscv.Debu
 <h2 id="5-summary"><a class="header" href="#5-summary">5. Summary</a></h2>
 <p>Phases 2A–2C complete the <strong>target-side RTL</strong> of the SWD plan; the DebugBus now speaks SWD end-to-end in simulation.</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="integration"><a class="header" href="#integration">Integration</a></h1>
-<h3 id="system-integration"><a class="header" href="#system-integration">System Integration</a></h3>
-<hr>
-<h4 id="spec-feature-coverage-summary-1"><a class="header" href="#spec-feature-coverage-summary-1">Spec Feature Coverage Summary</a></h4>
-<p><strong>SWD Specific Tasks:</strong></p>
+<h1 id="system-integration--swd"><a class="header" href="#system-integration--swd">System Integration — SWD</a></h1>
+<p>Goal is <strong>host-visible integration only</strong> (LiteX SoC, OpenOCD, GDB).</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Step</th><th>Content</th><th>Status</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>1</strong></td><td>Cluster / <code>core.py</code> / <code>swdremote</code> / <code>litex_sim</code> / Makefile + OpenOCD smoke</td><td>✅ Completed</td></tr>
+<tr><td><strong>2</strong></td><td>Custom OpenOCD option A (<code>riscv</code> glue) + GDB; finalize IDs if host hard-codes them</td><td>🟡 DAP/DMI helpers done; GDB open</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Note:</strong></p>
 <ul>
-<li><input disabled="" type="checkbox"> Add <code>withSwdTransport()</code> to <code>DebugModuleFiber</code> (mutually exclusive with <code>withJtagTap()</code> per build)</li>
-<li><input disabled="" type="checkbox"> Provide SWD pinout constraints for FPGA synthesis (weak pull-up on <code>swdio</code> per ADI; IOBUF at SoC level)</li>
-<li><input disabled="" type="checkbox"> <strong>Do not</strong> connect JTAG-DTM and SWD-DTM to <code>DebugBus</code> concurrently unless explicit arbitration is added</li>
-<li><input disabled="" type="checkbox"> Add <strong>custom</strong> OpenOCD target</li>
+<li>Support for official RISC-V DM only (<code>withPrivilegedDebug</code>).</li>
+<li>One Debug transport per build —
+<strong>no</strong> JTAG-DTM + SWD-DTM on the same <code>DebugBus</code> without arbitration. Do <strong>not</strong> set <code>JTAG_SIM=1</code> and <code>SWD_SIM=1</code> together.</li>
 </ul>
+<hr>
+<h2 id="swd-specific-tasks"><a class="header" href="#swd-specific-tasks">SWD specific tasks</a></h2>
+<h3 id="step-1-already-done"><a class="header" href="#step-1-already-done">Step 1 (Already done)</a></h3>
+<ul>
+<li><input disabled="" type="checkbox" checked=""> Create <code>DebugTransportModuleSwd</code> with <code>io.swclk</code> (<strong>input</strong>, probe-driven) + <code>io.swdio</code> as <code>i</code>/<code>o</code>/<code>oe</code> (Phase 2A–2C)</li>
+<li><input disabled="" type="checkbox" checked=""> Add <code>withSwdTransport()</code> to <code>DebugModuleFiber</code> (mutually exclusive with <code>withJtagTap()</code> per build) — Phase <strong>2C</strong></li>
+<li><input disabled="" type="checkbox" checked=""> LiteX SMP cluster: <code>swd</code> param, <code>--swd</code> CLI, three-wire <code>debugPort_swclk</code> / <code>swdio_{i,o,oe}</code>, <code>noTap</code> guarded <code>!jtagTap &amp;&amp; !swd</code> (2026-07-25)</li>
+<li><input disabled="" type="checkbox" checked=""> LiteX sim: <code>--with-swd-debug</code>, <code>_Swd</code> netlist token, <code>add_swd()</code>, <code>swdremote</code> on TCP <strong>44854</strong>, <code>SWD_SIM=1</code> Makefile targets (2026-07-25)</li>
+<li><input disabled="" type="checkbox" checked=""> OpenOCD smoke on sim: DPIDR <code>0x0ba11aab</code> + <code>dap apreg</code> → <code>dmstatus</code> <code>0x004c0c82</code></li>
+<li><input disabled="" type="checkbox" checked=""> OpenOCD cfgs: <code>openocd_swd_remote.cfg</code> + <code>vexriscv_swd.cfg</code> (DAP + <code>vexriscv_dmi_read/write</code> + smoke)</li>
+<li><input disabled="" type="checkbox" checked=""> Cluster asserts: reject <code>swd &amp;&amp; jtagTap</code>; require <code>privilegedDebug</code> when <code>swd</code></li>
+</ul>
+<h3 id="step-2--host-tooling--gdb-open"><a class="header" href="#step-2--host-tooling--gdb-open">Step 2 — host tooling + GDB (open)</a></h3>
+<ul>
+<li>[~] Custom OpenOCD target: DAP/DMI procs done; <strong><code>riscv</code> target glue + GDB still open</strong>
+<ul>
+<li>Exit: halt / resume / register read of the <strong>sim CPU</strong> over SWD (analogous to JTAG three-terminal)</li>
+<li>Files: <code>vexriscv_swd.cfg</code> (extend), optional interface cfgs for hardware</li>
+<li>Requires real hart in LiteX sim (not Phase2C stub <code>DebugHartBus</code>)</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"> Finalize <code>DPIDR</code> / <code>AP_IDR</code> before host scripts hard-code them
+<ul>
+<li>Rules + placeholders owned by Phase <strong>2C</strong> (<code>DPIDR=0x0BA11AAB</code>, <code>AP_IDR=0x74726976</code>)</li>
+<li>Must <strong>not</strong> look like ARM Cortex SW-DP (<code>0x2ba01477</code> / DESIGNER <code>0x23B</code>)</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"> GDB workflow on sim: <code>target extended-remote :3333</code>, <code>set remotetimeout 120</code>, <code>monitor reset halt</code>, <code>info registers</code></li>
+</ul>
+<hr>
+<h3 id="jtag--end-to-end-workflow"><a class="header" href="#jtag--end-to-end-workflow">JTAG — End to End Workflow</a></h3>
+<p>Official stack only (<code>--with-privileged-debug</code> + full JTAG TAP in sim) is already supported.</p>
+<p><strong>Prerequisites</strong></p>
+<ul>
+<li><code>litex_sim</code></li>
+<li><code>OpenOCD</code></li>
+<li><code>riscv64-unknown-elf-gdb</code></li>
+</ul>
+<p><strong>Configs</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>File</th><th>Role</th></tr>
+</thead>
+<tbody>
+<tr><td><code>openocd_jtag_remote.cfg</code></td><td><code>remote_bitbang</code> → <code>localhost:44853</code></td></tr>
+<tr><td><code>riscv_jtag_tunneled.tcl</code></td><td>TAP <code>irlen 6</code>, ID <code>0x10003fff</code>, <code>riscv use_bscan_tunnel 6 1</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Terminal 1 — sim (keep running)</strong></p>
+<pre><code class="language-sh">
+litex_sim \
+  --integrated-main-ram-size=0x10000 \
+  --cpu-type=vexriscv_smp \
+  --cpu-variant=linux \
+  --cpu-count=1 \
+  --with-privileged-debug \
+  --jtag-tap \
+  --with-jtagremote \
+  --non-interactive
+</code></pre>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Role</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--integrated-main-ram-size=0x10000</code></td><td>64 KiB main RAM for sim (demo load region)</td></tr>
+<tr><td><code>--cpu-type=vexriscv_smp</code> / <code>--cpu-variant=linux</code> / <code>--cpu-count=1</code></td><td>SMP Linux-capable cluster, 1 hart</td></tr>
+<tr><td><code>--with-privileged-debug</code></td><td>Official <code>DebugModule</code> + DTM (<code>_Pd</code> netlist token)</td></tr>
+<tr><td><code>--jtag-tap</code></td><td>Full JTAG TAP on cluster (<code>_JtagT</code>); needed so sim has TCK/TMS/TDI/TDO pads</td></tr>
+<tr><td><code>--with-jtagremote</code></td><td>LiteX sim module <code>jtagremote</code> — OpenOCD <code>remote_bitbang</code> on TCP <strong>44853</strong></td></tr>
+<tr><td><code>--non-interactive</code></td><td>Keep sim running (no local control menu); target for OpenOCD/GDB</td></tr>
+</tbody>
+</table>
+</div>
+<p>Wait for <code>Found port 44853</code> and BIOS prompt <code>litex&gt;</code>. First run may take several minutes
+(cluster regen + Verilator compile).</p>
+<p><strong>Terminal 2 — OpenOCD (after Terminal 1 is up)</strong></p>
+<pre><code class="language-sh">openocd -f openocd_jtag_remote.cfg -f riscv_jtag_tunneled.tcl
+</code></pre>
+<p>Success indicators:</p>
+<pre><code class="language-text">Info : JTAG tap: riscv.cpu tap/device found: 0x10003fff
+Info : Examined RISC-V core; found 1 harts
+Ready for Remote Connections
+Info : Listening on port 3333 for gdb connections
+</code></pre>
+<p><strong>Terminal 3 — GDB (after OpenOCD is ready)</strong></p>
+<pre><code class="language-sh">riscv64-unknown-elf-gdb -ex "set remotetimeout 120" \
+  -ex "set remote disable-packet-optimization 1" \
+  -ex "target extended-remote localhost:3333" \
+  demo/demo.elf
+</code></pre>
+<p>Load <code>demo.elf</code> (linked at <code>0x40000000</code>) only after halt — this <code>litex_sim</code> invocation does
+<strong>not</strong> pass <code>--ram-init=demo.bin</code>, so the image is not preloaded:</p>
+<pre><code class="language-gdb">monitor reset halt
+load demo/demo.elf
+break main
+continue
+</code></pre>
+<hr>
+<h3 id="swd--what-is-possible-now"><a class="header" href="#swd--what-is-possible-now">SWD — what is possible <strong>now</strong></a></h3>
+<p><strong>step 1</strong> landed LiteX + <code>swdremote</code> + OpenOCD smoke. In Terminal 3, <strong>NO</strong> GDB yet because <code>vexriscv_swd.cfg</code> deliberately does <strong>not</strong> <code>target create riscv</code> (stock OpenOCD has no RISC-V-over-SWD path).</p>
+<p><strong>Prerequisites (SWD-specific)</strong></p>
+<ul>
+<li><code>litex_sim</code></li>
+<li>OpenOCD with SWD <code>remote_bitbang</code></li>
+<li>GDB <strong>not</strong> usable on this path until step 2</li>
+</ul>
+<p><strong>Configs</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>File</th><th>Role</th></tr>
+</thead>
+<tbody>
+<tr><td><code>openocd_swd_remote.cfg</code></td><td><code>remote_bitbang</code> → <code>localhost:44854</code>, <code>transport select swd</code></td></tr>
+<tr><td><code>vexriscv_swd.cfg</code></td><td>SW-DP + DAP + <code>vexriscv_dmi_read/write</code> + <code>vexriscv_swd_smoke</code> — <strong>no</strong> <code>riscv</code> target</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Terminal 1 — sim (keep running)</strong></p>
+<pre><code class="language-sh">
+litex_sim \
+  --integrated-main-ram-size=0x10000 \
+  --cpu-type=vexriscv_smp \
+  --cpu-variant=linux \
+  --cpu-count=1 \
+  --with-privileged-debug \
+  --with-swd-debug \
+  --with-swdremote \
+  --non-interactive
+</code></pre>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Role</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--integrated-main-ram-size=0x10000</code></td><td>64 KiB main RAM for sim</td></tr>
+<tr><td><code>--cpu-type=vexriscv_smp</code> / <code>--cpu-variant=linux</code> / <code>--cpu-count=1</code></td><td>SMP Linux-capable cluster, 1 hart</td></tr>
+<tr><td><code>--with-privileged-debug</code></td><td>Official <code>DebugModule</code> (required; SWD is official-stack only)</td></tr>
+<tr><td><code>--with-swd-debug</code></td><td>Cluster SWD transport + <code>_Swd</code> netlist token; forces privileged debug on LiteX side</td></tr>
+<tr><td><code>--with-swdremote</code></td><td>LiteX sim module <code>swdremote</code> — OpenOCD <code>remote_bitbang</code> SWD on TCP <strong>44854</strong></td></tr>
+<tr><td><code>--non-interactive</code></td><td>Keep sim running as the target for OpenOCD</td></tr>
+</tbody>
+</table>
+</div>
+<p>Wait for <code>Found port 44854</code> and BIOS prompt <code>litex&gt;</code>. First run may take several minutes (cluster regen + Verilator compile).</p>
+<p>Do <strong>NOT</strong> pass <code>--jtag-tap</code> / <code>--with-jtagremote</code> here.</p>
+<p><strong>Terminal 2 — OpenOCD smoke (after Terminal 1 is up)</strong></p>
+<p>One-shot (connect, <code>vexriscv_swd_smoke</code>, exit):</p>
+<pre><code class="language-sh">openocd -s tcl \
+  -f openocd_swd_remote.cfg \
+  -f vexriscv_swd.cfg \
+  -c init -c vexriscv_swd_smoke -c shutdown
+</code></pre>
+<p>Verified success:</p>
+<pre><code class="language-text">Info : SWD DPIDR 0x0ba11aab
+AP_IDR   = 0x74726976
+dmstatus = 0x004c0c82 (version=2 authenticated=1 allrunning=1 allhalted=0)
+PASS: SWD -&gt; SW-DP -&gt; DMI gateway -&gt; DebugModule
+</code></pre>
+<p><strong>Terminal 3 — GDB</strong></p>
+<pre><code class="language-text">Not supported yet (step 2).
+No :3333 riscv GDB server from the SWD configs above.
+</code></pre>
+<p>when Step 2 is done — same shape as JTAG:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Terminal</th><th>Intended SWD flow (not done)</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td><code>litex_sim … --with-privileged-debug --with-swd-debug --with-swdremote --non-interactive</code></td></tr>
+<tr><td>2</td><td>OpenOCD + SWD + <strong><code>riscv</code> examine</strong> → listen <strong>:3333</strong></td></tr>
+<tr><td>3</td><td><code>riscv64-unknown-elf-gdb</code> → <code>target extended-remote localhost:3333</code> → halt / regs / load</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="host-attach-workflows-sim-only"><a class="header" href="#host-attach-workflows-sim-only">Host attach workflows (sim only)</a></h2>
+<h3 id="side-by-side"><a class="header" href="#side-by-side">Side-by-side</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Terminal</th><th>JTAG — <strong>full three-terminal ✅</strong></th><th>SWD — <strong>partial 🟡</strong></th></tr>
+</thead>
+<tbody>
+<tr><td><strong>1 — sim</strong></td><td><code>litex_sim … --with-privileged-debug --jtag-tap --with-jtagremote</code> → TCP <strong>44853</strong> (<code>jtagremote</code>)</td><td><code>litex_sim … --with-privileged-debug --with-swd-debug --with-swdremote</code> → TCP <strong>44854</strong> (<code>swdremote</code>)</td></tr>
+<tr><td><strong>2 — OpenOCD</strong></td><td>Stock <code>riscv</code> target + BSCAN tunnel; examines hart; GDB server <strong>:3333</strong></td><td><code>transport select swd</code> + DAP; <strong>DPIDR</strong> / <strong><code>dmstatus</code> via <code>dap apreg</code></strong>; <strong>no</strong> <code>riscv</code> target yet</td></tr>
+<tr><td><strong>3 — GDB</strong></td><td><code>target extended-remote localhost:3333</code> → halt / regs / load</td><td>❌ <strong>Not available</strong> until step 2 (<code>riscv</code> glue + GDB)</td></tr>
+</tbody>
+</table>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Capability</th><th>JTAG now</th><th>SWD now (completed Phase 2D tasks)</th></tr>
+</thead>
+<tbody>
+<tr><td>Verilator SoC + official DM</td><td>✅</td><td>✅ (<code>_Swd</code> cluster)</td></tr>
+<tr><td>Wire transport in sim</td><td>✅ JTAG TAP + tunnel</td><td>✅ SW-DP (<code>DebugTransportModuleSwd</code>)</td></tr>
+<tr><td>OpenOCD sees transport</td><td>✅ TAP <code>0x10003fff</code></td><td>✅ SWD DPIDR <code>0x0ba11aab</code></td></tr>
+<tr><td>Read <code>dmstatus</code></td><td>✅ via <code>riscv</code> / DMI</td><td>✅ via <code>vexriscv_dmi_read 0x11</code> / smoke</td></tr>
+<tr><td><code>Examined RISC-V core; found 1 harts</code></td><td>✅</td><td>❌ step 2</td></tr>
+<tr><td>GDB halt / resume / <code>info registers</code></td><td>✅</td><td>❌ step 2</td></tr>
+<tr><td><code>load demo.elf</code> / break / continue</td><td>✅</td><td>❌ step 2</td></tr>
+<tr><td>OpenOCD binary</td><td>✅</td><td>remote_bitbang SWD chars)</td></tr>
+</tbody>
+</table>
+</div>
 <hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
 <h3 id="phase-4-verification-and-testing"><a class="header" href="#phase-4-verification-and-testing">Phase 4: Verification and Testing</a></h3>
