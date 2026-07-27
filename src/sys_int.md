@@ -15,15 +15,21 @@ Goal is **host-visible integration only** (LiteX SoC, OpenOCD, GDB).
 
 ---
 
+**Code Repository :**
+
+- Litex    - https://github.com/disdi/litex/tree/swd
+- VexRiscv - https://github.com/disdi/VexRiscv/tree/phase3
+
+---
 
 ## SWD specific tasks
 
 ### Step 1 (Already done)
 
-- [x] Create `DebugTransportModuleSwd` with `io.swclk` (**input**, probe-driven) + `io.swdio` as `i`/`o`/`oe` (Phase 2A–2C)
+- [x] Create `DebugTransportModuleSwd` with `io.swclk` (**input**, probe-driven) + `io.swdio` as `i`/`o`/`oe` — Phase **2A–2C**
 - [x] Add `withSwdTransport()` to `DebugModuleFiber` (mutually exclusive with `withJtagTap()` per build) — Phase **2C**
-- [x] LiteX SMP cluster: `swd` param, `--swd` CLI, three-wire `debugPort_swclk` / `swdio_{i,o,oe}`, `noTap` guarded `!jtagTap && !swd` (2026-07-25)
-- [x] LiteX sim: `--with-swd-debug`, `_Swd` netlist token, `add_swd()`, `swdremote` on TCP **44854**, `SWD_SIM=1` Makefile targets (2026-07-25)
+- [x] LiteX SMP cluster: `swd` param, `--swd` CLI, three-wire `debugPort_swclk` / `swdio_{i,o,oe}`, `noTap` guarded `!jtagTap && !swd` — Phase **3**
+- [x] LiteX sim: `--with-swd-debug`, `_Swd` netlist token, `add_swd()`, `swdremote` on TCP **44854**, `SWD_SIM=1` Makefile targets — Phase **3**
 - [x] OpenOCD smoke on sim: DPIDR `0x0ba11aab` + `dap apreg` → `dmstatus` `0x004c0c82`
 - [x] OpenOCD cfgs: `openocd_swd_remote.cfg` + `vexriscv_swd.cfg` (DAP + `vexriscv_dmi_read/write` + smoke)
 - [x] Cluster asserts: reject `swd && jtagTap`; require `privilegedDebug` when `swd`
