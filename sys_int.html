@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f7279f94.js";
+            window.path_to_searchindex_js = "searchindex-94af00e9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -206,10 +206,10 @@
 <h2 id="swd-specific-tasks"><a class="header" href="#swd-specific-tasks">SWD specific tasks</a></h2>
 <h3 id="step-1-already-done"><a class="header" href="#step-1-already-done">Step 1 (Already done)</a></h3>
 <ul>
-<li><input disabled="" type="checkbox" checked=""> Create <code>DebugTransportModuleSwd</code> with <code>io.swclk</code> (<strong>input</strong>, probe-driven) + <code>io.swdio</code> as <code>i</code>/<code>o</code>/<code>oe</code> (Phase 2A–2C)</li>
+<li><input disabled="" type="checkbox" checked=""> Create <code>DebugTransportModuleSwd</code> with <code>io.swclk</code> (<strong>input</strong>, probe-driven) + <code>io.swdio</code> as <code>i</code>/<code>o</code>/<code>oe</code> — Phase <strong>2A–2C</strong></li>
 <li><input disabled="" type="checkbox" checked=""> Add <code>withSwdTransport()</code> to <code>DebugModuleFiber</code> (mutually exclusive with <code>withJtagTap()</code> per build) — Phase <strong>2C</strong></li>
-<li><input disabled="" type="checkbox" checked=""> LiteX SMP cluster: <code>swd</code> param, <code>--swd</code> CLI, three-wire <code>debugPort_swclk</code> / <code>swdio_{i,o,oe}</code>, <code>noTap</code> guarded <code>!jtagTap &amp;&amp; !swd</code> (2026-07-25)</li>
-<li><input disabled="" type="checkbox" checked=""> LiteX sim: <code>--with-swd-debug</code>, <code>_Swd</code> netlist token, <code>add_swd()</code>, <code>swdremote</code> on TCP <strong>44854</strong>, <code>SWD_SIM=1</code> Makefile targets (2026-07-25)</li>
+<li><input disabled="" type="checkbox" checked=""> LiteX SMP cluster: <code>swd</code> param, <code>--swd</code> CLI, three-wire <code>debugPort_swclk</code> / <code>swdio_{i,o,oe}</code>, <code>noTap</code> guarded <code>!jtagTap &amp;&amp; !swd</code> — Phase <strong>3</strong></li>
+<li><input disabled="" type="checkbox" checked=""> LiteX sim: <code>--with-swd-debug</code>, <code>_Swd</code> netlist token, <code>add_swd()</code>, <code>swdremote</code> on TCP <strong>44854</strong>, <code>SWD_SIM=1</code> Makefile targets — Phase <strong>3</strong></li>
 <li><input disabled="" type="checkbox" checked=""> OpenOCD smoke on sim: DPIDR <code>0x0ba11aab</code> + <code>dap apreg</code> → <code>dmstatus</code> <code>0x004c0c82</code></li>
 <li><input disabled="" type="checkbox" checked=""> OpenOCD cfgs: <code>openocd_swd_remote.cfg</code> + <code>vexriscv_swd.cfg</code> (DAP + <code>vexriscv_dmi_read/write</code> + smoke)</li>
 <li><input disabled="" type="checkbox" checked=""> Cluster asserts: reject <code>swd &amp;&amp; jtagTap</code>; require <code>privilegedDebug</code> when <code>swd</code></li>
