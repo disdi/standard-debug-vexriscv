@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-94af00e9.js";
+            window.path_to_searchindex_js = "searchindex-86cdbf74.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -850,7 +850,7 @@ AP seam on the other.</p>
 STICKYERR[5], WDATAERR[7], CDBGPWRUPREQ/ACK[28/29], CSYSPWRUPREQ/ACK[30/31] — the ACKs
 mirror the REQs. All other bits read as zero.</p>
 <p>The DPIDR default has a non-ARM DESIGNER field (<code>[11:1] = 0x555</code>, bit0 = 1, DPv1) — a
-deliberate placeholder to be replaced per the Phase 2D identification rules before any
+deliberate placeholder to be replaced per the identification rules before any
 host-tool integration.</p>
 <h3 id="13-ack-policy-the-waitfault-generation-deferred-from-2a"><a class="header" href="#13-ack-policy-the-waitfault-generation-deferred-from-2a">1.3 ACK policy (the WAIT/FAULT generation deferred from 2A)</a></h3>
 <p>Decided combinationally off the registered <code>cmd</code> pulse, so the answer lands within the
@@ -1174,6 +1174,7 @@ sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest vexriscv.Debu
 <li>Litex    - https://github.com/disdi/litex/tree/swd</li>
 <li>VexRiscv - https://github.com/disdi/VexRiscv/tree/phase3</li>
 </ul>
+<p>(Update submodules in <a href="https://github.com/disdi/pythondata-cpu-vexriscv_smp">pythondata-cpu-vexriscv_smp</a> to above branch)</p>
 <hr>
 <h2 id="swd-specific-tasks"><a class="header" href="#swd-specific-tasks">SWD specific tasks</a></h2>
 <h3 id="step-1-already-done"><a class="header" href="#step-1-already-done">Step 1 (Already done)</a></h3>
@@ -1373,7 +1374,7 @@ No :3333 riscv GDB server from the SWD configs above.
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Capability</th><th>JTAG now</th><th>SWD now (completed Phase 2D tasks)</th></tr>
+<tr><th>Capability</th><th>JTAG now</th><th>SWD now</th></tr>
 </thead>
 <tbody>
 <tr><td>Verilator SoC + official DM</td><td>✅</td><td>✅ (<code>_Swd</code> cluster)</td></tr>
@@ -1412,7 +1413,7 @@ No :3333 riscv GDB server from the SWD configs above.
 <ul>
 <li><input disabled="" type="checkbox"> Write internal architecture documentation (SW-DP / DMI gateway AP / <code>DebugBus</code> / DM)</li>
 <li><input disabled="" type="checkbox"> Write user-facing guide: official JTAG (<code>riscv-openocd</code> + <code>riscv-target</code>) vs SWD (custom target)</li>
-<li><input disabled="" type="checkbox"> Document Phase 2D <code>DPIDR</code>, <code>AP_IDR</code>, and <code>DMI_ADDR</code> register map</li>
+<li><input disabled="" type="checkbox"> Document <code>DPIDR</code>, <code>AP_IDR</code>, and <code>DMI_ADDR</code> register map</li>
 <li><input disabled="" type="checkbox"> Document which optional RISC-V debug spec features are implemented</li>
 </ul>
 <hr>
