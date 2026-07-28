@@ -63,7 +63,7 @@ STICKYERR[5], WDATAERR[7], CDBGPWRUPREQ/ACK[28/29], CSYSPWRUPREQ/ACK[30/31] — 
 mirror the REQs. All other bits read as zero.
 
 The DPIDR default has a non-ARM DESIGNER field (`[11:1] = 0x555`, bit0 = 1, DPv1) — a
-deliberate placeholder to be replaced per the Phase 2D identification rules before any
+deliberate placeholder to be replaced per the identification rules before any
 host-tool integration.
 
 ### 1.3 ACK policy (the WAIT/FAULT generation deferred from 2A)

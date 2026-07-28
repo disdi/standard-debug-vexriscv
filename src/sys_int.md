@@ -20,6 +20,8 @@ Goal is **host-visible integration only** (LiteX SoC, OpenOCD, GDB).
 - Litex    - https://github.com/disdi/litex/tree/swd
 - VexRiscv - https://github.com/disdi/VexRiscv/tree/phase3
 
+(Update submodules in [pythondata-cpu-vexriscv_smp](https://github.com/disdi/pythondata-cpu-vexriscv_smp) to above branch)
+
 ---
 
 ## SWD specific tasks
@@ -224,7 +226,7 @@ when Step 2 is done — same shape as JTAG:
 | **2 — OpenOCD** | Stock `riscv` target + BSCAN tunnel; examines hart; GDB server **:3333** | `transport select swd` + DAP; **DPIDR** / **`dmstatus` via `dap apreg`**; **no** `riscv` target yet |
 | **3 — GDB** | `target extended-remote localhost:3333` → halt / regs / load | ❌ **Not available** until step 2 (`riscv` glue + GDB) |
 
-| Capability | JTAG now | SWD now (completed Phase 2D tasks) |
+| Capability | JTAG now | SWD now |
 | --- | --- | --- |
 | Verilator SoC + official DM | ✅ | ✅ (`_Swd` cluster) |
 | Wire transport in sim | ✅ JTAG TAP + tunnel | ✅ SW-DP (`DebugTransportModuleSwd`) |
