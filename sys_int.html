@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-fffa80bb.js";
+            window.path_to_searchindex_js = "searchindex-b50d2030.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -187,8 +187,7 @@ RTL (<code>SwdPhy</code> / <code>SwdDp</code> / <code>SwdDmiGateway</code>) is P
 </thead>
 <tbody>
 <tr><td><strong>1</strong></td><td>Cluster / <code>core.py</code> / <code>swdremote</code> / <code>litex_sim</code> + OpenOCD raw-AP smoke</td><td>✅ Completed</td></tr>
-<tr><td><strong>2</strong></td><td>Custom OpenOCD <code>riscv</code> glue + GDB halt/resume/regs</td><td>✅ Completed (<strong>Vexriscv fork</strong>: master + Gerrit 9786)</td></tr>
-<tr><td><strong>2b</strong></td><td>Sim GDB <code>break main</code> / <code>continue</code> / <code>bt</code> on a preloaded demo</td><td>✅ Completed (Vexriscv fork)</td></tr>
+<tr><td><strong>2</strong></td><td>Custom OpenOCD <code>riscv</code> glue + GDB</td><td>✅ Completed (<strong>Vexriscv fork</strong>: master + Gerrit 9786)</td></tr>
 <tr><td><strong>3</strong></td><td>Arty pinout + CMSIS-DAP (SWD mode) + Phase 4 regressions</td><td>[ ] <strong>Next</strong></td></tr>
 <tr><td>—</td><td>Finalize placeholder <code>DPIDR</code> / <code>AP_IDR</code> if host scripts hard-code them</td><td>[ ] Still open (placeholders ship from Phase 2C)</td></tr>
 </tbody>
@@ -386,7 +385,7 @@ continue
 <p>If sim is slow and <code>keep_alive()</code> warnings (slow bitbang) are seen, prefer <code>target extended-remote</code>
 and <code>set remotetimeout 120</code>.</p>
 <hr>
-<h3 id="swd--openocd-lanes-master"><a class="header" href="#swd--openocd-lanes-master">SWD — OpenOCD lanes (master)</a></h3>
+<h3 id="swd--openocd"><a class="header" href="#swd--openocd">SWD — OpenOCD</a></h3>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -529,9 +528,8 @@ bt
 <tr><th>Item</th><th>Notes</th></tr>
 </thead>
 <tbody>
-<tr><td><strong>Arty + CMSIS-DAP</strong> (step 3)</td><td>Next host-visible milestone</td></tr>
+<tr><td><strong>Arty + CMSIS-DAP</strong></td><td>Next host-visible milestone</td></tr>
 <tr><td><strong><code>DPIDR</code> / <code>AP_IDR</code> finalize</strong></td><td>Placeholders still <code>0x0BA11AAB</code> / <code>0x74726976</code></td></tr>
-<tr><td><strong><code>dmstatus.version</code></strong></td><td>Reads <code>2</code> (Debug Spec 0.13 claim), not <code>3</code> (1.0) — open conformance note</td></tr>
 <tr><td><strong>Gerrit 9786 merge</strong></td><td>Published at <a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">disdi/openocd <code>vexriscv-gateway</code></a>; 9786 still unmerged upstream (plus two fixes on that branch)</td></tr>
 </tbody>
 </table>
