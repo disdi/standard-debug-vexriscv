@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-1f6fa1b6.js";
+            window.path_to_searchindex_js = "searchindex-fffa80bb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -180,12 +180,19 @@
                         <h1 id="documentation"><a class="header" href="#documentation">Documentation</a></h1>
 <h3 id="phase-5-documentation--developer-interface"><a class="header" href="#phase-5-documentation--developer-interface">Phase 5: Documentation &amp; Developer Interface</a></h3>
 <hr>
-<h4 id="tasks"><a class="header" href="#tasks">Tasks</a></h4>
+<h4 id="done"><a class="header" href="#done">Done</a></h4>
 <ul>
-<li><input disabled="" type="checkbox"> Write internal architecture documentation (SW-DP / DMI gateway AP / <code>DebugBus</code> / DM)</li>
-<li><input disabled="" type="checkbox"> Write user-facing guide: official JTAG (<code>riscv-openocd</code> + <code>riscv-target</code>) vs SWD (custom target)</li>
-<li><input disabled="" type="checkbox"> Document <code>DPIDR</code>, <code>AP_IDR</code>, and <code>DMI_ADDR</code> register map</li>
-<li><input disabled="" type="checkbox"> Document which optional RISC-V debug spec features are implemented</li>
+<li><input disabled="" type="checkbox" checked=""> Phase 2A–2C architecture chapters in this book (<code>SwdPhy</code> / <code>SwdDp</code> / <code>SwdDmiGateway</code>)</li>
+<li><input disabled="" type="checkbox" checked=""> Operator how-to for <strong>sim</strong> three-terminal attach (JTAG and SWD) — <a href="./sys_int.html">Phase 3</a></li>
+<li><input disabled="" type="checkbox" checked=""> Document placeholder <code>DPIDR</code>, <code>AP_IDR</code>, and Phase 2C <code>DMI_ADDR</code> / <code>DMI_DATA</code> / <code>POSTED_READ</code> map (see <a href="./Phase2C.html">Phase 2C</a>)</li>
+</ul>
+<h4 id="still-open"><a class="header" href="#still-open">Still open</a></h4>
+<ul>
+<li><input disabled="" type="checkbox"> Broader user-facing guide beyond sim (FPGA CMSIS-DAP, probe-rs, multi-probe notes)</li>
+<li><input disabled="" type="checkbox"> Finalize published identification constants once IDs leave placeholder status</li>
+<li><input disabled="" type="checkbox"> Document which optional RISC-V debug-spec features are implemented vs stubbed
+(<code>dmstatus.version</code>, abstract commands surface, triggers, SBA)</li>
+<li><input disabled="" type="checkbox" checked=""> Published OpenOCD Vexriscv fork: <a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">disdi/openocd <code>vexriscv-gateway</code></a> (9786 + fixes + gateway; still unmerged upstream)</li>
 </ul>
 <hr>
                     </main>

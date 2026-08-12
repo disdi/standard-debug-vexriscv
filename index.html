@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-1f6fa1b6.js";
+            window.path_to_searchindex_js = "searchindex-fffa80bb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -178,7 +178,7 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="standard-debug-spec-milestone"><a class="header" href="#standard-debug-spec-milestone">Standard Debug Spec Milestone</a></h1>
-<p>Below are milestones planned in the project :</p>
+<p>Below are milestones planned in the project:</p>
 <ul>
 <li><a href="./dtm_dmi.html">Phase 1A</a> JTAG DTM + DMI Bus</li>
 <li><a href="./dm.html">Phase 1B</a> Core DM (dmcontrol/dmstatus)</li>
@@ -187,12 +187,31 @@
 <li><a href="./Phase2A.html">Phase 2A</a> SWD protocol state machine (<code>SwdPhy</code>)</li>
 <li><a href="./Phase2B.html">Phase 2B</a> SW-DP register file (<code>SwdDp</code>)</li>
 <li><a href="./Phase2C.html">Phase 2C</a> DMI gateway + clock crossing</li>
-<li><a href="./sys_int.html">Phase 3</a> Integration</li>
+<li><a href="./sys_int.html">Phase 3</a> Integration (LiteX sim, OpenOCD, GDB)</li>
 <li><a href="./veri_test.html">Phase 4</a> Testing</li>
 <li><a href="./docu.html">Phase 5</a> Documentation</li>
 </ul>
-<p>Phase 1 adds missing features in DebugModule from <a href="https://docs.riscv.org/reference/debug/">ratified RISC-V Debug Specification</a>.</p>
-<p>Phase 2 adds a <strong>target-side Arm Serial Wire Debug (SWD)</strong> front-end that still drives the same RISC-V <code>DebugBus</code> used by the JTAG DTM. The Arm specification  is at <a href="https://developer.arm.com/documentation/ihi0031/latest/">ADIv5.0–ADIv5.2 (IHI0031)</a>.</p>
+<h3 id="status-snapshot-sim"><a class="header" href="#status-snapshot-sim">Status snapshot (sim)</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Area</th><th>Status</th></tr>
+</thead>
+<tbody>
+<tr><td>Phase 2A–2C (target-side SWD DTM)</td><td>✅ Implemented and sim-verified (sbt + LiteX)</td></tr>
+<tr><td>Phase 3 step 1 (LiteX + raw-AP smoke)</td><td>✅ DPIDR + <code>dmstatus</code> over SWD</td></tr>
+<tr><td>Phase 3 step 2 (<code>riscv</code> + GDB)</td><td>✅ Vexriscv fork — <a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">disdi/openocd <code>vexriscv-gateway</code></a> (master + Gerrit 9786 + VexRiscv gateway)</td></tr>
+<tr><td>Phase 3 step 2b (demo <code>break</code> / <code>continue</code>)</td><td>✅ Preload path on the Vexriscv fork; no GDB <code>load</code> in sim</td></tr>
+<tr><td>Phase 3 step 3 (Arty + CMSIS-DAP)</td><td>[ ] Next</td></tr>
+<tr><td>Phase 4–5</td><td>Partial — host sim paths done; hardware / full matrix open</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Conformance note:</strong> the <a href="https://docs.riscv.org/reference/debug/">RISC-V Debug Specification</a>
+defines only a <strong>JTAG</strong> DTM. SWD is a <strong>custom DTM</strong> (explicitly permitted). Claim
+<em>"RISC-V Debug Specification, with custom DTM"</em> — never an unqualified conformance claim.</p>
+<p>Phase 1 adds missing features in DebugModule from the ratified RISC-V Debug Specification.</p>
+<p>Phase 2 adds a <strong>target-side Arm Serial Wire Debug (SWD)</strong> front-end that still drives the same RISC-V <code>DebugBus</code> used by the JTAG DTM. The Arm specification is at <a href="https://developer.arm.com/documentation/ihi0031/latest/">ADIv5.0–ADIv5.2 (IHI0031)</a>.</p>
 <pre><code class="language-text">Host (SWCLK / SWDIO)
         │
    ┌────▼────┐

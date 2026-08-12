@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-1f6fa1b6.js";
+            window.path_to_searchindex_js = "searchindex-fffa80bb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -179,19 +179,30 @@
                     <main>
                         <h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
 <h3 id="phase-4-verification-and-testing"><a class="header" href="#phase-4-verification-and-testing">Phase 4: Verification and Testing</a></h3>
+<p>Host-visible <strong>sim</strong> paths that already pass are tracked under <a href="./sys_int.html">Phase 3</a>
+(raw-AP smoke, <code>riscv</code> examine, GDB attach/regs, demo break/continue). This chapter is
+the broader regression matrix — much of it still open, especially on hardware.</p>
 <hr>
-<h4 id="tasks"><a class="header" href="#tasks">Tasks</a></h4>
+<h4 id="done-in-sim-via-phase-3"><a class="header" href="#done-in-sim-via-phase-3">Done in sim (via Phase 3)</a></h4>
 <ul>
-<li><input disabled="" type="checkbox"> Build simulation testbenches for SWD-DTM → <code>DebugBus</code> → DM → CPU path (bit-level SWD + DMI gateway)</li>
-<li><input disabled="" type="checkbox"> Send automated <strong>SWD</strong> stimuli via <strong>custom</strong> OpenOCD target on real CMSIS-DAP hardware</li>
-<li><input disabled="" type="checkbox"> Test <code>dmactive</code> activation/deactivation sequence</li>
+<li><input disabled="" type="checkbox" checked=""> SWD-DTM → <code>DebugBus</code> → DM path at sbt (Phases 2A–2C) and LiteX Verilator SoC</li>
+<li><input disabled="" type="checkbox" checked=""> OpenOCD master smoke: DPIDR + <code>dap apreg</code> → <code>dmstatus</code></li>
+<li><input disabled="" type="checkbox" checked=""> OpenOCD <code>riscv</code> examine + halt/resume/register access over SWD (patched builds)</li>
+<li><input disabled="" type="checkbox" checked=""> GDB attach / registers / memory R/W over SWD</li>
+<li><input disabled="" type="checkbox" checked=""> GDB <code>break main</code> / <code>continue</code> / backtrace on preloaded demo (no GDB <code>load</code>)</li>
+</ul>
+<h4 id="still-open"><a class="header" href="#still-open">Still open</a></h4>
+<ul>
+<li><input disabled="" type="checkbox"> Automated <strong>SWD</strong> stimuli via custom OpenOCD target on real <strong>CMSIS-DAP</strong> hardware (Arty)</li>
+<li><input disabled="" type="checkbox"> Test <code>dmactive</code> activation/deactivation sequence (formal matrix)</li>
 <li><input disabled="" type="checkbox"> Test abstract command error handling (all 7 <code>cmderr</code> codes)</li>
-<li><input disabled="" type="checkbox"> Test EBREAK behavior with <code>dcsr.ebreakm</code>/<code>ebreaks</code>/<code>ebreaku</code> combinations</li>
+<li><input disabled="" type="checkbox"> Test EBREAK behavior with <code>dcsr.ebreakm</code> / <code>ebreaks</code> / <code>ebreaku</code> combinations</li>
 <li><input disabled="" type="checkbox"> Test single-step across privilege mode transitions</li>
 <li><input disabled="" type="checkbox"> Test trigger module: each trigger type, chaining, <code>dmode</code> security</li>
 <li><input disabled="" type="checkbox"> Test System Bus Access error handling (if implemented)</li>
 <li><input disabled="" type="checkbox"> Test authentication mechanism (if implemented)</li>
-<li><input disabled="" type="checkbox"> Regression tests for all implemented features</li>
+<li><input disabled="" type="checkbox"> Decide <code>dmstatus.version</code> claim (<code>2</code> = 0.13 vs <code>3</code> = 1.0)</li>
+<li><input disabled="" type="checkbox"> Regression suite for all implemented features (CI-friendly)</li>
 </ul>
 <hr>
                     </main>
