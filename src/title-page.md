@@ -1,6 +1,6 @@
 # Standard Debug Spec Milestone
 
-Below are milestones planned in the project :
+Below are milestones planned in the project:
 
 - [Phase 1A](./dtm_dmi.md) JTAG DTM + DMI Bus
 - [Phase 1B](./dm.md) Core DM (dmcontrol/dmstatus)
@@ -9,13 +9,28 @@ Below are milestones planned in the project :
 - [Phase 2A](./Phase2A.md) SWD protocol state machine (`SwdPhy`)
 - [Phase 2B](./Phase2B.md) SW-DP register file (`SwdDp`)
 - [Phase 2C](./Phase2C.md) DMI gateway + clock crossing
-- [Phase 3](./sys_int.md) Integration
+- [Phase 3](./sys_int.md) Integration (LiteX sim, OpenOCD, GDB)
 - [Phase 4](./veri_test.md) Testing
 - [Phase 5](./docu.md) Documentation
 
-Phase 1 adds missing features in DebugModule from [ratified RISC-V Debug Specification](https://docs.riscv.org/reference/debug/).
+### Status snapshot (sim)
 
-Phase 2 adds a **target-side Arm Serial Wire Debug (SWD)** front-end that still drives the same RISC-V `DebugBus` used by the JTAG DTM. The Arm specification  is at [ADIv5.0–ADIv5.2 (IHI0031)](https://developer.arm.com/documentation/ihi0031/latest/).
+| Area | Status |
+| --- | --- |
+| Phase 2A–2C (target-side SWD DTM) | ✅ Implemented and sim-verified (sbt + LiteX) |
+| Phase 3 step 1 (LiteX + raw-AP smoke) | ✅ DPIDR + `dmstatus` over SWD |
+| Phase 3 step 2 (`riscv` + GDB) | ✅ Vexriscv fork — [disdi/openocd `vexriscv-gateway`](https://github.com/disdi/openocd/tree/vexriscv-gateway) (master + Gerrit 9786 + VexRiscv gateway) |
+| Phase 3 step 2b (demo `break` / `continue`) | ✅ Preload path on the Vexriscv fork; no GDB `load` in sim |
+| Phase 3 step 3 (Arty + CMSIS-DAP) | [ ] Next |
+| Phase 4–5 | Partial — host sim paths done; hardware / full matrix open |
+
+**Conformance note:** the [RISC-V Debug Specification](https://docs.riscv.org/reference/debug/)
+defines only a **JTAG** DTM. SWD is a **custom DTM** (explicitly permitted). Claim
+*"RISC-V Debug Specification, with custom DTM"* — never an unqualified conformance claim.
+
+Phase 1 adds missing features in DebugModule from the ratified RISC-V Debug Specification.
+
+Phase 2 adds a **target-side Arm Serial Wire Debug (SWD)** front-end that still drives the same RISC-V `DebugBus` used by the JTAG DTM. The Arm specification is at [ADIv5.0–ADIv5.2 (IHI0031)](https://developer.arm.com/documentation/ihi0031/latest/).
 
 ```text
 Host (SWCLK / SWDIO)
