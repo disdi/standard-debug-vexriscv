@@ -1,22 +1,6 @@
 # Phase 2A — SWD Protocol State Machine: Implementation & Verification
 
-**Status:** implemented and sim-verified.
 
-**Tasks** :
-- [x] Define the internal 2A↔2B transaction seam first: `SwdDpCmd`/`SwdDpRsp`/`SwdDpWrite` flows so 2A is verifiable standalone against a stubbed DP
-- [x] Implement 2-wire physical interface on the **target**: `swclk` **input** (driven by probe) + `swdio` as `i`/`o`/`oe` (tristate/IOBUF at SoC level)
-- [x] Implement packet request parser — 8-bit frame: Start(1), APnDP(1), RnW(1), A[2:3](2), Parity(1), Stop(1), Park(1)
-- [x] Implement ACK response generator — 3-bit ACK[2:0]: OK(0b001), WAIT(0b010), FAULT(0b100) (ADIv6.0 Table B4-1). Transmitted LSB-first like all SWD data, so OK appears on the wire as `1,0,0` — do not confuse wire order with the register value
-- [x] Implement turnaround period management — direction change on SWDIO between host-driven and target-driven phases (Sec B4.1.3); fixed at 1 cycle (`DLCR.TURNROUND` unsupported)
-- [x] Implement WDATA phase — 33-bit host→target: WDATA[0:31] + parity (for write operations after OK ACK)
-- [x] Implement RDATA phase — 33-bit target→host: RDATA[0:31] + parity (for read operations after OK ACK)
-- [x] Implement even parity checker/generator — separate parity on packet request (4 bits: APnDP, RnW, A[2:3]) and data transfer (32 bits) (Sec B4.1.6)
-- [x] Implement LSB-first bit ordering for all data values (Sec B4.1.5)
-- [x] Accept idle cycles between transactions (Sec B4.1.4); back-to-back with zero idle also works
-- [x] Implement line reset detection — 50+ clock cycles with SWDIO HIGH, followed by 2+ idle cycles (Sec B4.3.3)
-- [x] Start with SWD protocol version 1 (point-to-point); version 2 multi-drop support is optional; no ORUNDETECT
-
----
 
 **Code Repository :**
 
