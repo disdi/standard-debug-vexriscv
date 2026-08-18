@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-9c2ee076.js";
+            window.path_to_searchindex_js = "searchindex-b8642757.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -178,23 +178,6 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="phase-2a--swd-protocol-state-machine-implementation--verification"><a class="header" href="#phase-2a--swd-protocol-state-machine-implementation--verification">Phase 2A — SWD Protocol State Machine: Implementation &amp; Verification</a></h1>
-<p><strong>Status:</strong> implemented and sim-verified.</p>
-<p><strong>Tasks</strong> :</p>
-<ul>
-<li><input disabled="" type="checkbox" checked=""> Define the internal 2A↔2B transaction seam first: <code>SwdDpCmd</code>/<code>SwdDpRsp</code>/<code>SwdDpWrite</code> flows so 2A is verifiable standalone against a stubbed DP</li>
-<li><input disabled="" type="checkbox" checked=""> Implement 2-wire physical interface on the <strong>target</strong>: <code>swclk</code> <strong>input</strong> (driven by probe) + <code>swdio</code> as <code>i</code>/<code>o</code>/<code>oe</code> (tristate/IOBUF at SoC level)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement packet request parser — 8-bit frame: Start(1), APnDP(1), RnW(1), A<a href="2">2:3</a>, Parity(1), Stop(1), Park(1)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement ACK response generator — 3-bit ACK[2:0]: OK(0b001), WAIT(0b010), FAULT(0b100) (ADIv6.0 Table B4-1). Transmitted LSB-first like all SWD data, so OK appears on the wire as <code>1,0,0</code> — do not confuse wire order with the register value</li>
-<li><input disabled="" type="checkbox" checked=""> Implement turnaround period management — direction change on SWDIO between host-driven and target-driven phases (Sec B4.1.3); fixed at 1 cycle (<code>DLCR.TURNROUND</code> unsupported)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement WDATA phase — 33-bit host→target: WDATA[0:31] + parity (for write operations after OK ACK)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement RDATA phase — 33-bit target→host: RDATA[0:31] + parity (for read operations after OK ACK)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement even parity checker/generator — separate parity on packet request (4 bits: APnDP, RnW, A[2:3]) and data transfer (32 bits) (Sec B4.1.6)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement LSB-first bit ordering for all data values (Sec B4.1.5)</li>
-<li><input disabled="" type="checkbox" checked=""> Accept idle cycles between transactions (Sec B4.1.4); back-to-back with zero idle also works</li>
-<li><input disabled="" type="checkbox" checked=""> Implement line reset detection — 50+ clock cycles with SWDIO HIGH, followed by 2+ idle cycles (Sec B4.3.3)</li>
-<li><input disabled="" type="checkbox" checked=""> Start with SWD protocol version 1 (point-to-point); version 2 multi-drop support is optional; no ORUNDETECT</li>
-</ul>
-<hr>
 <p><strong>Code Repository :</strong></p>
 <p>Update submodules in <a href="https://github.com/disdi/pythondata-cpu-vexriscv_smp">pythondata-cpu-vexriscv_smp</a> to below :</p>
 <ul>

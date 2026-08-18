@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-9c2ee076.js";
+            window.path_to_searchindex_js = "searchindex-b8642757.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -463,23 +463,6 @@ swdio.oe → pad output enable
 </div>
 <hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="phase-2a--swd-protocol-state-machine-implementation--verification"><a class="header" href="#phase-2a--swd-protocol-state-machine-implementation--verification">Phase 2A — SWD Protocol State Machine: Implementation &amp; Verification</a></h1>
-<p><strong>Status:</strong> implemented and sim-verified.</p>
-<p><strong>Tasks</strong> :</p>
-<ul>
-<li><input disabled="" type="checkbox" checked=""> Define the internal 2A↔2B transaction seam first: <code>SwdDpCmd</code>/<code>SwdDpRsp</code>/<code>SwdDpWrite</code> flows so 2A is verifiable standalone against a stubbed DP</li>
-<li><input disabled="" type="checkbox" checked=""> Implement 2-wire physical interface on the <strong>target</strong>: <code>swclk</code> <strong>input</strong> (driven by probe) + <code>swdio</code> as <code>i</code>/<code>o</code>/<code>oe</code> (tristate/IOBUF at SoC level)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement packet request parser — 8-bit frame: Start(1), APnDP(1), RnW(1), A<a href="2">2:3</a>, Parity(1), Stop(1), Park(1)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement ACK response generator — 3-bit ACK[2:0]: OK(0b001), WAIT(0b010), FAULT(0b100) (ADIv6.0 Table B4-1). Transmitted LSB-first like all SWD data, so OK appears on the wire as <code>1,0,0</code> — do not confuse wire order with the register value</li>
-<li><input disabled="" type="checkbox" checked=""> Implement turnaround period management — direction change on SWDIO between host-driven and target-driven phases (Sec B4.1.3); fixed at 1 cycle (<code>DLCR.TURNROUND</code> unsupported)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement WDATA phase — 33-bit host→target: WDATA[0:31] + parity (for write operations after OK ACK)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement RDATA phase — 33-bit target→host: RDATA[0:31] + parity (for read operations after OK ACK)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement even parity checker/generator — separate parity on packet request (4 bits: APnDP, RnW, A[2:3]) and data transfer (32 bits) (Sec B4.1.6)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement LSB-first bit ordering for all data values (Sec B4.1.5)</li>
-<li><input disabled="" type="checkbox" checked=""> Accept idle cycles between transactions (Sec B4.1.4); back-to-back with zero idle also works</li>
-<li><input disabled="" type="checkbox" checked=""> Implement line reset detection — 50+ clock cycles with SWDIO HIGH, followed by 2+ idle cycles (Sec B4.3.3)</li>
-<li><input disabled="" type="checkbox" checked=""> Start with SWD protocol version 1 (point-to-point); version 2 multi-drop support is optional; no ORUNDETECT</li>
-</ul>
-<hr>
 <p><strong>Code Repository :</strong></p>
 <p>Update submodules in <a href="https://github.com/disdi/pythondata-cpu-vexriscv_smp">pythondata-cpu-vexriscv_smp</a> to below :</p>
 <ul>
@@ -584,19 +567,6 @@ LSB first. <code>step</code> returns <code>(o, oe)</code>, so every helper can a
 per cycle.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="phase-2b--sw-dp-register-file-implementation--verification"><a class="header" href="#phase-2b--sw-dp-register-file-implementation--verification">Phase 2B — SW-DP Register File: Implementation &amp; Verification</a></h1>
-<p><strong>Status:</strong> implemented and sim-verified (Jul 2026)</p>
-<p><strong>Tasks:</strong></p>
-<ul>
-<li><input disabled="" type="checkbox" checked=""> Implement <code>DPIDR</code> register (DP read, A[3:2]=0b00) — read-only device ID with manufacturer, version, min/revision fields</li>
-<li><input disabled="" type="checkbox" checked=""> Implement <code>CTRL/STAT</code> register (DP read/write, A[3:2]=0b01, SELECT.DPBANKSEL=0x0) — sticky error flags: STICKYERR, STICKYCMP, STICKYORUN, WDATAERR; power control: CDBGPWRUPREQ/ACK, CSYSPWRUPREQ/ACK; ORUNDETECT enable</li>
-<li><input disabled="" type="checkbox" checked=""> Implement <code>SELECT</code> register (DP write, A[3:2]=0b10) — DPBANKSEL (4 bits) + ADDR (AP address selection)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement <code>RDBUFF</code> register (DP read, A[3:2]=0b11) — read buffer for previous AP read result</li>
-<li><input disabled="" type="checkbox" checked=""> Implement <code>ABORT</code> register (DP write, A[3:2]=0b00) — DAPABORT, STKCMPCLR, STKERRCLR, WDERRCLR, ORUNERRCLR</li>
-<li><input disabled="" type="checkbox" checked=""> Implement sticky error handling — FAULT response when any sticky flag is set; errors cleared only via ABORT register (Sec B1.2)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement WAIT response logic — issued when AP/DP access is outstanding or AP read result not yet available (Sec B4.2.3)</li>
-<li><input disabled="" type="checkbox" checked=""> Consume <code>SwdDpWrite.parityOk</code> as WDATAERR sticky material (line-layer protocol error / line reset already handled in Phase 2A)</li>
-</ul>
-<hr>
 <p><strong>Code Repository :</strong></p>
 <p>Update submodules in <a href="https://github.com/disdi/pythondata-cpu-vexriscv_smp">pythondata-cpu-vexriscv_smp</a> to below :</p>
 <ul>
@@ -646,82 +616,22 @@ Phase 2A (<code>SwdPhy</code>), the register semantics are Phase 2B (<code>SwdDp
 DP access on its own.</p>
 <p><strong>A DP read</strong> — DPIDR, <code>A[3:2] = 00</code></p>
 <p><em>Wire layout</em> — one cell per SWCLK bit period, LSB first within every multi-bit field:</p>
-<pre><code class="language-mermaid">packet-beta
-0: "Start"
-1: "APnDP 0"
-2: "RnW 1"
-3: "A2"
-4: "A3"
-5: "Par"
-6: "Stop"
-7: "Park"
-8: "Trn"
-9-11: "ACK OK — on the wire 1,0,0"
-12-43: "RDATA 32 bits LSB first — DPIDR 0x0BA11AAB"
-44: "Par"
-45: "Trn"
-</code></pre>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/wire-dp-read.png" alt="Wire Read Operation"><span class="img-wrapper"><img src="images/wire-dp-read.png" alt="Wire Read Operation"></span></label></p>
 <p>Bits 0–7 host-driven · bits 9–44 target-driven · bits 8 and 45 are turnarounds where
 neither side drives and SWDIO floats to its mandatory pull-up. The closing turnaround is
 one <strong>bit period</strong> on the wire but two SWCLK cycles in RTL (<code>RELEASE</code>), because <code>SwdPhy</code>
 registers its outputs — see the step-ownership table below.</p>
 <p><em>Phase ownership</em>:</p>
-<pre><code class="language-mermaid">sequenceDiagram
-    autonumber
-    participant H as Host (probe)
-    participant PHY as SwdPhy — Phase 2A
-    participant DP as SwdDp — Phase 2B
-
-    H-&gt;&gt;PHY: 8 request bits — start, APnDP=0, RnW=1, A=00, parity, stop, park
-    Note over PHY: HEADER state — LSB-first shift-in,&lt;br/&gt;parity + stop + park validated (2A)
-    PHY-&gt;&gt;DP: cmd {apNdp=0, rnw=1, addr=00}
-    DP--&gt;&gt;PHY: rsp {ack=OK, rdata=DPIDR} — combinational off cmd.valid
-    Note over DP: dpReadData mux selects DPIDR (0x0BA11AAB),  ACK precedence FAULT, WAIT, OK (2B)
-    Note over PHY: rspHold latches rsp for the rest of the frame
-    PHY--&gt;&gt;H: turnaround — 1 bit period, nobody drives
-    PHY--&gt;&gt;H: ACK = OK, on the wire LSB-first as 1,0,0
-    PHY--&gt;&gt;H: 32 RDATA bits LSB-first + even parity
-    PHY--&gt;&gt;H: RELEASE — 2 cycles, line handed back
-</code></pre>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/phase-dp-read.png" alt="Phase Read Operation"><span class="img-wrapper"><img src="images/phase-dp-read.png" alt="Phase Read Operation"></span></label></p>
 <p><strong>A DP write</strong> — SELECT, <code>A[3:2] = 10</code></p>
 <p><em>Wire layout</em> — note the second turnaround at bit 12, absent from the read:</p>
-<pre><code class="language-mermaid">packet-beta
-0: "Start"
-1: "APnDP 0"
-2: "RnW 0"
-3: "A2"
-4: "A3"
-5: "Par"
-6: "Stop"
-7: "Park"
-8: "Trn"
-9-11: "ACK OK — on the wire 1,0,0"
-12: "Trn"
-13-44: "WDATA 32 bits LSB first — SELECT value"
-45: "Par"
-</code></pre>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/wire-dp-write.png" alt="Wire Write Operation"><span class="img-wrapper"><img src="images/wire-dp-write.png" alt="Wire Write Operation"></span></label></p>
 <p>Bits 0–7 host-driven · bits 9–11 target-driven · bits 13–45 host-driven again · bits 8
 and 12 are turnarounds. <strong>This layout is the reason the 2A↔2B seam has three flows</strong>: the
 target must commit to the ACK at bits 9–11, thirty-two bit periods before the data it is
 acknowledging exists on the wire.</p>
 <p><em>Phase ownership</em>:</p>
-<pre><code class="language-mermaid">sequenceDiagram
-    autonumber
-    participant H as Host (probe)
-    participant PHY as SwdPhy — Phase 2A
-    participant DP as SwdDp — Phase 2B
-
-    H-&gt;&gt;PHY: 8 request bits — start, APnDP=0, RnW=0, A=10, parity, stop, park
-    PHY-&gt;&gt;DP: cmd {apNdp=0, rnw=0, addr=10}
-    DP--&gt;&gt;PHY: rsp {ack=OK} — no data yet, this is a write
-    Note over DP: last.pendingWrite := True,&lt;br/&gt;last.addrReg := 10 (SELECT) — the ACK-before-data bridge (2B)
-    PHY--&gt;&gt;H: turnaround, then ACK = OK as 1,0,0
-    PHY--&gt;&gt;H: WR_TRN — second turnaround, line handed back to the host
-    H-&gt;&gt;PHY: 32 WDATA bits LSB-first + parity
-    Note over PHY: WRITE_DATA state — shift in, verify even parity (2A)
-    PHY-&gt;&gt;DP: wr {data, parityOk}
-    Note over DP: parity ok → SELECT := data, parity fail → wdataErr := True, commit dropped (2B)
-</code></pre>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/phase-dp-write.png" alt="Phase Write Operation"><span class="img-wrapper"><img src="images/phase-dp-write.png" alt="Phase Write Operation"></span></label></p>
 <hr>
 <h2 id="2-testbench-changes"><a class="header" href="#2-testbench-changes">2. Testbench changes</a></h2>
 <h3 id="21-shared-driver-extraction"><a class="header" href="#21-shared-driver-extraction">2.1 Shared driver extraction</a></h3>
@@ -750,18 +660,6 @@ sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest"
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="phase-2c--dmi-gateway-clock-crossing--debugmodule-integration"><a class="header" href="#phase-2c--dmi-gateway-clock-crossing--debugmodule-integration">Phase 2C — DMI Gateway, Clock Crossing &amp; DebugModule Integration</a></h1>
-<p><strong>Status:</strong> implemented and sim-verified.</p>
-<p><strong>Tasks:</strong></p>
-<ul>
-<li><input disabled="" type="checkbox" checked=""> Map AP read/write operations to <code>DebugBus.cmd</code> (same <code>DebugCmd</code> interface used by JTAG DTM)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement AP address decoding — translate <code>SELECT.ADDR</code> + <code>A[3:2]</code> to DMI address for <code>DebugBus.cmd.address</code></li>
-<li><input disabled="" type="checkbox" checked=""> Implement posted AP reads — first AP read returns UNKNOWN data; result available on next AP read or RDBUFF read (Sec B4.2.2)</li>
-<li><input disabled="" type="checkbox" checked=""> Wire <code>DebugBus.rsp</code> to RDATA output and ACK generation</li>
-<li><input disabled="" type="checkbox" checked=""> Handle cross-clock-domain between SWD clock (SWCLK) and debug clock domain (reuse <code>ccToggle</code> pattern from JTAG DTM)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement WAIT response when <code>DebugBus.cmd</code> is not ready (DM busy)</li>
-<li><input disabled="" type="checkbox" checked=""> Implement FAULT response when <code>DebugBus.rsp.error</code> is set</li>
-</ul>
-<hr>
 <p><strong>Code Repository :</strong></p>
 <ul>
 <li>pythondata-cpu-vexriscv_smp - https://github.com/disdi/pythondata-cpu-vexriscv_smp/tree/phase2c</li>
@@ -787,11 +685,12 @@ sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest"
 </div>
 <p><code>EXT</code> = <code>pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext</code>. Still zero LiteX involvement.</p>
 <hr>
-<h2 id="1-what-is-implemented-1"><a class="header" href="#1-what-is-implemented-1">1. What is implemented</a></h2>
+<h2 id="1implementation-of-dmi-for-swd"><a class="header" href="#1implementation-of-dmi-for-swd">1.Implementation of DMI for SWD</a></h2>
 <h3 id="11-swddmigateway--the-risc-v-dmi-gateway-ap"><a class="header" href="#11-swddmigateway--the-risc-v-dmi-gateway-ap">1.1 <code>SwdDmiGateway</code> — the RISC-V DMI gateway AP</a></h3>
 <p>Sits behind the 2B AP seam (<code>SwdApCmd</code>/<code>SwdApRsp</code>) and drives a <code>DebugBus</code> master —
 the <strong>same <code>DebugCmd</code>/<code>DebugRsp</code> interface the JTAG DTM produces</strong>, which is the whole
 point of the transport-agnostic design.</p>
+<p>The DMI needs a 7-bit address and 32 bits of data. SWD offers, per transaction, one bit of DP/AP selection and two bits of register address. Four AP registers, total.</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -800,37 +699,22 @@ point of the transport-agnostic design.</p>
 <tbody>
 <tr><td><code>00</code></td><td><code>AP_IDR</code></td><td>RO</td><td>identification constant (default <code>0x74726976</code> "triv") — completes locally in 1 SWCLK cycle</td></tr>
 <tr><td><code>01</code></td><td><code>DMI_ADDR</code></td><td>RW</td><td>latches the 7-bit DMI word address; readable back — local</td></tr>
-<tr><td><code>10</code></td><td><code>DMI_DATA</code></td><td>RW</td><td>performs the <code>DebugBus</code> transaction at <code>DMI_ADDR</code> (RnW from the SWD packet) — crosses domains</td></tr>
-<tr><td><code>11</code></td><td><code>POSTED_READ</code></td><td>RO</td><td>last completed DMI <strong>read</strong> result (RDBUFF semantics) — local</td></tr>
+<tr><td><code>10</code></td><td><code>DMI_DATA</code></td><td>RW</td><td>performs the <code>DebugBus</code> transaction at <code>DMI_ADDR</code> (RnW from the SWD packet)</td></tr>
+<tr><td><code>11</code></td><td><code>POSTED_READ</code></td><td>RO</td><td>last completed DMI <strong>read</strong> result — local</td></tr>
 </tbody>
 </table>
 </div>
 <p>Writes to RO registers complete OK with no effect. <code>SELECT.APSEL</code> is not decoded
 (single-AP design). AP reads launch at the request (posted, per 2B); AP writes launch at
 the WDATA commit carrying the data.</p>
-<h3 id="12-clock-crossing--the-jtag-dtm-pattern-reused"><a class="header" href="#12-clock-crossing--the-jtag-dtm-pattern-reused">1.2 Clock crossing — the JTAG DTM pattern, reused</a></h3>
-<p>The gateway is an <code>Area</code> with the same two-domain shape as <code>DebugTransportModuleJtag</code>:</p>
-<ul>
-<li><strong>cmd</strong> (SWCLK → debug): <code>dmiCmd.ccToggle(...).toStream.m2sPipe(crossClockData = true, holdPayload = true)</code> → <code>bus.cmd</code>. Stream backpressure from a busy DM simply extends the
-in-flight window — the DP's WAIT logic (2B) covers it.</li>
-<li><strong>rsp</strong> (debug → SWCLK): <code>bus.rsp.ccToggle(..., withOutputBufferedReset = false)</code> — the
-flag matters: the SWCLK domain is <strong>BOOT-reset</strong> (a 2-wire interface has no reset pin;
-line reset is the protocol-level reset), and a buffered reset cannot be synthesized into
-a BOOT domain (SpinalHDL asserts). Pop-side synchronizers boot-init instead.</li>
-<li><strong>Solicited-completion gating</strong> (<code>dmiPending</code> here, <code>apBusy</code> in 2B): only a response to
-an in-flight access completes anything.</li>
-</ul>
-<p>The DM responds on <code>DebugBus.rsp</code> for <strong>both</strong> reads and writes (<code>DebugBusSlaveFactory</code>
-stages every <code>cmd.fire</code>), so AP writes complete on the crossed response — no
-self-acknowledgment needed.</p>
-<h3 id="13-debugtransportmoduleswd--the-full-transport"><a class="header" href="#13-debugtransportmoduleswd--the-full-transport">1.3 <code>DebugTransportModuleSwd</code> — the full transport</a></h3>
+<h3 id="12-debugtransportmoduleswd--the-full-transport"><a class="header" href="#12-debugtransportmoduleswd--the-full-transport">1.2 <code>DebugTransportModuleSwd</code> — the full transport</a></h3>
 <p>SWD pins → <code>SwdPhy</code> (2A) → <code>SwdDp</code> (2B) → <code>SwdDmiGateway</code> (2C) → <code>DebugBus</code>. The SWD side
 elaborates under <code>ClockDomain(swclk, resetKind = BOOT)</code>; the <code>DebugBus</code> side under the
 provided <code>debugCd</code>. This is the SWD counterpart of <code>DebugTransportModuleJtagTap</code>.</p>
 <p><code>DebugModuleFiber.withSwdTransport(dpidr, apIdr)</code> instantiates it alongside
 <code>withJtagTap()</code> — same one-transport-per-build rule (direct <code>io.ctrl</code> connection, no
 arbitration).</p>
-<h3 id="14-end-to-end-dmstatus-read-the-step-2-exit-graphically"><a class="header" href="#14-end-to-end-dmstatus-read-the-step-2-exit-graphically">1.4 End-to-end dmstatus read (the step-2 exit), graphically</a></h3>
+<h3 id="13-end-to-end-dmstatus-read-the-step-2-exit-graphically"><a class="header" href="#13-end-to-end-dmstatus-read-the-step-2-exit-graphically">1.3 End-to-end dmstatus read (the step-2 exit), graphically</a></h3>
 <p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/phase2c.png" alt="phase2c"><span class="img-wrapper"><img src="images/phase2c.png" alt="phase2c"></span></label></p>
 <hr>
 <h2 id="2-testbench--debugswddmtest"><a class="header" href="#2-testbench--debugswddmtest">2. Testbench — <code>DebugSwdDmTest</code></a></h2>
@@ -849,35 +733,16 @@ includes the sticky flags in the assertion message (<code>ackCheck</code>) — t
 the phantom-completion bug (§4.2). The <code>sim(name, seed = …)</code> hook pins a failing seed
 for deterministic reproduction.</li>
 </ul>
-<h2 id="3-what-each-test-verifies"><a class="header" href="#3-what-each-test-verifies">3. What each test verifies</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>#</th><th>Test</th><th>Verifies</th></tr>
-</thead>
-<tbody>
-<tr><td>1</td><td><strong>DPIDR reads through the assembled transport</strong></td><td>The full stack elaborates and runs: BOOT-domain phy, async clocks, fiber-style wiring — and the plain DP path still works.</td></tr>
-<tr><td>2</td><td><strong>AP IDR via posted read</strong></td><td>Gateway local completion path + 2B posted-read plumbing end-to-end (<code>AP_IDR</code> lands in RDBUFF).</td></tr>
-<tr><td>3</td><td><strong>DMI_ADDR write and readback</strong></td><td>The address latch: AP write commits (WDATA path through the gateway), AP read returns it.</td></tr>
-<tr><td>4</td><td><strong>dmstatus read over SWD — step 2 exit criterion</strong></td><td>The headline: <code>DMI_ADDR←0x11</code>, <code>DMI_DATA</code> read crosses to the DM and back; RDBUFF poll returns dmstatus with <code>version=2</code> and <code>authenticated=1</code>.</td></tr>
-<tr><td>5</td><td><strong>dmcontrol dmactive write and readback</strong></td><td>Full DMI <strong>write</strong> path into a real DM register (resets 0, reads back 1) — write launch at commit, crossed completion, subsequent read.</td></tr>
-<tr><td>6</td><td><strong>abstractauto write and readback</strong></td><td>A second, WARL-masked DM register round-trip (<code>0x18</code>, bits [0]/[17:16]) including clearing. (data0/progbuf cannot round-trip with a stubbed hart — see §4.3.)</td></tr>
-<tr><td>7</td><td><strong>POSTED_READ returns the last DMI read result</strong></td><td>The gateway's <code>lastRead</code> alias agrees with RDBUFF after a completed DMI read.</td></tr>
-</tbody>
-</table>
-</div>
-<p>WAIT responses are exercised implicitly on nearly every test by the retry helpers (the
-async completion latency makes WAIT occur naturally); FAULT-on-<code>rsp.error</code> was unit-tested
-in the 1b suite (the real DM's factory never raises <code>error</code>).</p>
 <hr>
-<h2 id="4-verification-1"><a class="header" href="#4-verification-1">4. Verification</a></h2>
+<h2 id="3-verification"><a class="header" href="#3-verification">3. Verification</a></h2>
 <pre><code class="language-sh">cd ~/fpga/pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext/VexRiscv
 sbt -batch "testOnly vexriscv.DebugSwdDmTest"
 # expect: Tests: succeeded 7, failed 0, canceled 0, ignored 0, pending 0
 sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest vexriscv.DebugSwdDmTest"
 # expect: Tests: succeeded 25, failed 0, canceled 0, ignored 0, pending 0
 </code></pre>
-<h2 id="5-summary"><a class="header" href="#5-summary">5. Summary</a></h2>
+<hr>
+<h2 id="4-summary"><a class="header" href="#4-summary">4. Summary</a></h2>
 <p>Phases 2A–2C complete the <strong>target-side RTL</strong> of the SWD plan; the DebugBus now speaks SWD end-to-end in simulation.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="system-integration--swd"><a class="header" href="#system-integration--swd">System Integration — SWD</a></h1>
