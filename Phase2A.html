@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b50d2030.js";
+            window.path_to_searchindex_js = "searchindex-9c2ee076.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -254,147 +254,6 @@ phase</strong>, so write data cannot ride in the request.</p>
 <p>The response is latched into a hold register on first sight (<code>rsp.valid</code> may be
 combinational off <code>cmd</code> or held continuously); ACK and RDATA are driven from the
 latched copy for the rest of the frame.</p>
-<h3 id="13-frame-timing-rising-edge-numbering"><a class="header" href="#13-frame-timing-rising-edge-numbering">1.3 Frame timing (rising-edge numbering)</a></h3>
-<p>Request bits are sampled at edges <code>e1..e8</code> (start, APnDP, RnW, A2, A3, parity, stop, park —
-LSB first). <code>cmd</code> fires at <code>e8</code>.</p>
-<p><strong>Read, ACK=OK</strong> (one turnaround each way, target keeps the line between ACK and RDATA):</p>
-<pre><code class="language-text">e1..e8   host request          (target oe=0)
-e9       turnaround            -&gt; target drives ACK[0] at e9
-e9..e11  ACK[0..2]
-e12..e43 RDATA[0..31]          (from rsp.rdata, LSB first)
-e44      even parity of RDATA
-e45      release (oe -&gt; 0)     turnaround back to host
-</code></pre>
-<p><strong>Write, ACK=OK</strong> (two turnarounds around the ACK — the bug the tests caught: sampling one
-edge early captures the turnaround as data bit 0):</p>
-<pre><code class="language-text">e1..e8   host request
-e9       turnaround            -&gt; target drives ACK[0]
-e9..e11  ACK[0..2]
-e12      release (oe -&gt; 0)     \  second turnaround: host takes the line,
-e13      turnaround bit period /  drives its first WDATA bit after it
-e14..e45 WDATA[0..31]          sampled LSB first into a shift register
-e46      parity bit            -&gt; dp.wr fires with data + parityOk verdict
-</code></pre>
-<p><strong>WAIT/FAULT</strong> (either direction): the data phase is skipped — after ACK[2] the target
-releases immediately and returns to idle. (No ORUNDETECT support, so this is unconditional.)</p>
-<h3 id="14-fsm"><a class="header" href="#14-fsm">1.4 FSM</a></h3>
-<p>States: <code>IDLE → HEADER → ACK → {READ_DATA | WR_TRN → WRITE_DATA | RELEASE} → IDLE</code>, plus
-<code>ERROR</code> and <code>RESET_WAIT</code> (power-up init is <code>RESET_WAIT</code>, so the target stays quiet until
-the line is seen low once).</p>
-<ul>
-<li><strong>Protocol error</strong> (request parity, stop≠0, park≠1): enter <code>ERROR</code> — the target stops
-driving and ignores all traffic until line reset (ADIv6.0 §B4.2.5).</li>
-<li><strong>Line reset detector</strong> (independent of the FSM): a saturating counter of consecutive
-<code>swdio.i == 1</code> samples while the target is not driving; at <strong>50</strong> it forces
-<code>RESET_WAIT</code> from <em>any</em> state (including <code>ERROR</code>), which falls to <code>IDLE</code> on the first
-low (idle) cycle. The counter is frozen/cleared while <code>oe=1</code> so target-driven phases
-can't fake a reset.</li>
-</ul>
-<h4 id="141-target-state-machine-for-one-frame-implementation-oriented"><a class="header" href="#141-target-state-machine-for-one-frame-implementation-oriented">1.4.1 Target state machine for one frame (implementation-oriented)</a></h4>
-<p>A practical encoding of Section B4.1–B4.2 from the specification for a <strong>single transaction</strong> on the target.</p>
-<p>This section has two layers:</p>
-<ol>
-<li><strong>§1.4.2 abstract diagram</strong> — phase names aligned with ADI figures (includes <code>TRN_H2T</code> and
-optional <code>OVERRUN_DATA</code>).</li>
-<li><strong>§1.4.3–§1.4.5 Phase 2A <code>SwdPhy</code></strong> — how that diagram maps onto the RTL enum and transitions in
-<code>DebugTransportModuleSwd.scala</code> (<code>case class SwdPhy</code>).</li>
-</ol>
-<hr>
-<h4 id="142-abstract-one-frame-fsm-spec-oriented"><a class="header" href="#142-abstract-one-frame-fsm-spec-oriented">1.4.2 Abstract one-frame FSM (spec-oriented)</a></h4>
-<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/phase2a.svg" alt="phase2a"><span class="img-wrapper"><img src="images/phase2a.svg" alt="phase2a"></span></label></p>
-<hr>
-<h4 id="143-state-inventory--diagram-142--rtl"><a class="header" href="#143-state-inventory--diagram-142--rtl">1.4.3 State inventory — diagram §1.4.2 ↔ RTL</a></h4>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Diagram §1.4.2</th><th>RTL <code>EState</code></th><th>Role</th></tr>
-</thead>
-<tbody>
-<tr><td><code>IDLE</code></td><td><code>IDLE</code></td><td>Wait for Start; between frames (<code>oDrive := False</code>)</td></tr>
-<tr><td><code>HEADER</code></td><td><code>HEADER</code></td><td>LSB-first shift-in after Start; validate at park</td></tr>
-<tr><td><code>TRN_H2T</code></td><td><em>(no named state)</em></td><td><strong>Folded into first cycle of <code>ACK</code></strong></td></tr>
-<tr><td><code>ACK</code></td><td><code>ACK</code></td><td>Drive ACK[0..2] from <code>ackNow</code> / <code>rspHold</code> (<code>cnt</code> 0..2)</td></tr>
-<tr><td><code>READ_DATA</code></td><td><code>READ_DATA</code></td><td>RDATA[0:31] + even parity; keep <code>oe=1</code> after ACK</td></tr>
-<tr><td><code>WR_TRN</code></td><td><code>WR_TRN</code></td><td>Post-ACK turnaround before write (<code>oe=0</code>, 2 cycles)</td></tr>
-<tr><td><code>WRITE_DATA</code></td><td><code>WRITE_DATA</code></td><td>Sample WDATA + parity → <code>dp.wr</code></td></tr>
-<tr><td><code>RELEASE</code></td><td><code>RELEASE</code></td><td>Release after target-driven phase → <code>IDLE</code></td></tr>
-<tr><td><code>ERROR</code></td><td><code>ERROR</code></td><td>Protocol error: do not drive; ignore headers</td></tr>
-<tr><td><code>OVERRUN_DATA</code></td><td><strong>absent</strong></td><td>ORUNDETECT out of scope (WAIT/FAULT always skip data)</td></tr>
-<tr><td><em>(recovery)</em></td><td><code>RESET_WAIT</code></td><td>After line-reset hit; leave on first low → <code>IDLE</code></td></tr>
-</tbody>
-</table>
-</div>
-<hr>
-<h4 id="144-transition-mapping-diagram--rtl"><a class="header" href="#144-transition-mapping-diagram--rtl">1.4.4 Transition mapping (diagram → RTL)</a></h4>
-<h4 id="idle--header--start-bit--1"><a class="header" href="#idle--header--start-bit--1"><code>IDLE → HEADER</code> — Start bit = 1</a></h4>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Diagram</th><th>RTL</th></tr>
-</thead>
-<tbody>
-<tr><td>Start sampled 1</td><td><code>when(dio) { state := HEADER; cnt := 0 }</code> in <code>IDLE</code></td></tr>
-</tbody>
-</table>
-</div>
-<p>Start is <strong>not</strong> stored in <code>hdr</code>; it only opens the header window. Remaining bits are shifted in <code>HEADER</code>.</p>
-<h4 id="header--error-or-valid-exit"><a class="header" href="#header--error-or-valid-exit"><code>HEADER → ERROR</code> or valid exit</a></h4>
-<p>On park edge (<code>cnt === 6</code>), <code>hdr</code> holds APnDP…Stop and <code>dio</code> is Park:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Check</th><th>RTL</th><th>Spec</th></tr>
-</thead>
-<tbody>
-<tr><td>Even parity of APnDP, RnW, A2, A3</td><td><code>(apNdp ^ rnw ^ a2 ^ a3) === hdr(4)</code></td><td>B4.1.6 / B4.2.5</td></tr>
-<tr><td>Stop = 0</td><td><code>stopOk = !hdr(5)</code></td><td>B4.2.5</td></tr>
-<tr><td>Park = 1</td><td><code>dio</code> on that edge</td><td>B4.2.5</td></tr>
-</tbody>
-</table>
-</div>
-<ul>
-<li>Fail → <code>ERROR</code> (silent until line reset).</li>
-<li>Pass → <code>cmdValid</code> pulse (<code>SwdDpCmd</code>: <code>apNdp</code>, <code>rnw</code>, <code>addr</code>) and <code>state := ACK</code><br>(“cmd accepted” on the diagram’s park edge).</li>
-</ul>
-<h4 id="where-is-diagram-trn_h2t"><a class="header" href="#where-is-diagram-trn_h2t">Where is diagram <code>TRN_H2T</code>?</a></h4>
-<p>There is <strong>no</strong> <code>TRN_H2T</code> state. Comment in RTL: <em>“next cycle is the turnaround”</em> after park, then <code>ACK</code> both:</p>
-<ol>
-<li>owns the host→target turnaround cycle (from the host’s view), and</li>
-<li>drives the three ACK bits.</li>
-</ol>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Edge</th><th>Diagram name</th><th>RTL</th></tr>
-</thead>
-<tbody>
-<tr><td>Park</td><td>end of <code>HEADER</code></td><td><code>HEADER</code> → schedule <code>ACK</code>, fire <code>cmd</code></td></tr>
-<tr><td>Next rising edge</td><td><code>TRN_H2T</code> / first ACK drive</td><td>First <code>ACK</code> cycle: <code>oe=1</code>, <code>ACK[0]</code></td></tr>
-<tr><td>Next two edges</td><td>rest of <code>ACK</code></td><td><code>ACK[1]</code>, <code>ACK[2]</code> (<code>cnt</code> 1, 2)</td></tr>
-</tbody>
-</table>
-</div>
-<p>So diagram <strong><code>TRN_H2T</code> + <code>ACK</code></strong> collapse into RTL <strong><code>ACK</code> with <code>cnt = 0,1,2</code></strong>. Same wire timing as Fig B4-1/B4-2; one fewer named state.</p>
-<h4 id="ack---after-three-ack-bits-cnt--2"><a class="header" href="#ack---after-three-ack-bits-cnt--2"><code>ACK → …</code> after three ACK bits (<code>cnt === 2</code>)</a></h4>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Diagram edge</th><th>RTL</th><th>Match?</th></tr>
-</thead>
-<tbody>
-<tr><td>OK ∧ read → <code>READ_DATA</code></td><td><code>ackNow === OK &amp;&amp; cmdPayload.rnw</code> → <code>READ_DATA</code></td><td>Exact</td></tr>
-<tr><td>OK ∧ write → <code>WR_TRN</code></td><td><code>ackNow === OK &amp;&amp; !rnw</code> → <code>WR_TRN</code></td><td>Exact</td></tr>
-<tr><td>≠OK, no overrun → <code>RELEASE</code></td><td>else → <code>RELEASE</code></td><td>Exact</td></tr>
-<tr><td>≠OK ∧ ORUNDETECT → <code>OVERRUN_DATA</code></td><td><strong>never</strong></td><td>By design (scope)</td></tr>
-</tbody>
-</table>
-</div>
-<p>ACK value comes from the <strong>2B seam</strong>, not sticky logic inside 2A:</p>
-<ul>
-<li><code>io.dp.rsp</code> → latched in <code>rspHold</code> when <code>valid</code></li>
-<li><code>ackNow = Mux(rsp.valid, rsp.ack, rspHold.ack)</code></li>
-<li>Encoded LSB-first on the wire: OK=<code>001</code>, WAIT=<code>010</code>, FAULT=<code>100</code></li>
-</ul>
 <h4 id="read-path--read_data--release--idle-fig-b4-2"><a class="header" href="#read-path--read_data--release--idle-fig-b4-2">Read path — <code>READ_DATA → RELEASE → IDLE</code> (Fig B4-2)</a></h4>
 <p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/read_operation.png" alt="Read Operation"><span class="img-wrapper"><img src="images/read_operation.png" alt="Read Operation"></span></label></p>
 <ul>
@@ -425,41 +284,8 @@ optional <code>OVERRUN_DATA</code>).</li>
 <p>Line reset is <strong>orthogonal</strong> (overrides any state): ≥50 consecutive highs on <code>swdio.i</code> while <code>!oDrive</code>; counter frozen/cleared while target drives so ACK/RDATA cannot fake a reset.</p>
 <p><code>RESET_WAIT</code> is an <strong>RTL-only</strong> gate so the target does not accept Start until the line has gone idle after the reset burst. Diagram §1.4.2 draws a direct <code>ERROR → IDLE</code>; recovery contract is the same.</p>
 <hr>
-<h4 id="145-side-by-side-graph"><a class="header" href="#145-side-by-side-graph">1.4.5 Side-by-side graph</a></h4>
-<pre><code class="language-text">Diagram §1.4.2 (abstract)                 SwdPhy RTL
-───────────────────────                 ──────────
-
-[*] → IDLE                              RESET_WAIT → IDLE  (after first low)
-        │                                      │
-        │ Start=1                              │ dio=1
-        ▼                                      ▼
-     HEADER ──bad──► ERROR                  HEADER ──bad──► ERROR
-        │                                      │
-        │ good park                            │ good park (+ cmd pulse)
-        ▼                                      ▼
-    TRN_H2T  ─────────────────────────────►  (implicit; first ACK cycle)
-        │                                      │
-        ▼                                      ▼
-       ACK ──OK∧R──► READ_DATA ──► RELEASE    ACK ──OK∧R──► READ_DATA ──► RELEASE
-        │                 │                     │                 │
-        │ OK∧W            └────────► IDLE       │ OK∧W            └────────► IDLE
-        ▼                                      ▼
-     WR_TRN ──► WRITE_DATA ──► IDLE         WR_TRN ──► WRITE_DATA ──► IDLE
-        │                                      │
-        │ ≠OK (no overrun)                     │ ≠OK
-        ▼                                      ▼
-     RELEASE ──► IDLE                        RELEASE ──► IDLE
-        │
-        │ ≠OK ∧ ORUNDETECT
-        ▼
-   OVERRUN_DATA ──► IDLE                   (not implemented)
-
-  ERROR ──line reset──► IDLE               ERROR ──line reset──► RESET_WAIT ──low──► IDLE
-                                           (line reset also from any other state)
-</code></pre>
-<hr>
 <h2 id="2-how-the-testbench-works--debugswdtest"><a class="header" href="#2-how-the-testbench-works--debugswdtest">2. How the testbench works — <code>DebugSwdTest</code></a></h2>
-<h3 id="21-the-bench-is-the-probe"><a class="header" href="#21-the-bench-is-the-probe">2.1 The bench is the probe</a></h3>
+<h3 id="the-bench-is-the-probe"><a class="header" href="#the-bench-is-the-probe">The bench is the probe</a></h3>
 <p>SWCLK is the DUT clock, and the bench <strong>owns it</strong>: no <code>forkStimulus</code> — every SWCLK cycle is
 one call to <code>step(bit)</code>:</p>
 <pre><code class="language-text">fallingEdge(); set swdio.i = bit;      // host updates while SWCLK low
@@ -471,56 +297,7 @@ the target at the rising edge ending its cycle; a target-driven bit read in cycl
 the value the target registered at edge <em>k−1</em>. All multi-bit values are sent/collected
 LSB first. <code>step</code> returns <code>(o, oe)</code>, so every helper can assert drive/release behavior
 per cycle.</p>
-<h3 id="22-always-ready-stub-dp"><a class="header" href="#22-always-ready-stub-dp">2.2 Always-ready stub DP</a></h3>
-<p>The DP behind the seam is a stub programmed by two vars (<code>stubAck</code>, <code>stubRdata</code>) and
-observed through two queues (<code>cmds</code> — decoded requests, <code>wrs</code> — write commits with the
-parity verdict). A forked thread runs every sampling:</p>
-<ul>
-<li><strong>holds <code>rsp.valid</code> true continuously</strong> with the programmed ack/rdata, and</li>
-<li>records <code>cmd</code>/<code>wr</code> pulses into the queues.</li>
-</ul>
-<p>The always-ready shape is deliberate: the ADI contract requires the DP to answer within
-the turnaround cycle. An earlier stub that <em>reacted</em> to <code>cmd.valid</code> from a sim thread
-arrived one clock late nondeterministically (SpinalSim thread-scheduling race) and produced
-flaky all-zero ACKs — the always-valid response is both race-free and the honest model of
-the combinational 2B register file.</p>
-<h3 id="23-transaction-helpers-assertions-built-in"><a class="header" href="#23-transaction-helpers-assertions-built-in">2.3 Transaction helpers (assertions built in)</a></h3>
-<ul>
-<li><code>header(...)</code> — sends the 8-bit request; can inject <code>flipParity</code> / <code>badStop</code> / <code>badPark</code>;
-asserts the target never drives during the request.</li>
-<li><code>readAck()</code> — collects ACK[0..2]; asserts <code>oe</code> on all three bits.</li>
-<li><code>transactRead(...)</code> — request → trn → ACK; on OK collects 33 target bits asserting <code>oe</code>
-throughout, <strong>recomputes and checks even parity</strong>, then asserts release on the trailing
-turnaround. On WAIT/FAULT asserts the very next cycle is undriven (data phase skipped).</li>
-<li><code>transactWrite(...)</code> — request → trn → ACK; on OK asserts release for the second
-turnaround, then drives 33 bits (optionally with <code>flipDataParity</code>). On WAIT/FAULT same
-skip assertion as reads.</li>
-<li><code>lineReset()</code> — 52 high cycles + 2 idle; <code>idle(n)</code> / <code>ones(n)</code> primitives.</li>
-</ul>
-<p>Each test runs in a fresh sim (<code>compiled.doSim</code>) with reset applied, the stub forked, and
-4 idle cycles before the body.</p>
-<hr>
-<h2 id="3-what-each-test-verifies"><a class="header" href="#3-what-each-test-verifies">3. What each test verifies</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>#</th><th>Test</th><th>Verifies</th></tr>
-</thead>
-<tbody>
-<tr><td>1</td><td><strong>write reaches stub bit-exact</strong></td><td>Full OK write frame: decoded <code>cmd</code> fields <code>(apNdp=0, rnw=0, A[3:2]=2)</code> reach the stub; <code>0xCAFE1234</code> arrives in the commit bit-exact with <code>parityOk=true</code>. Proves WDATA sampling starts after the <em>second</em> turnaround (this test caught the off-by-one that received <code>data &lt;&lt; 1</code>).</td></tr>
-<tr><td>2</td><td><strong>read returns stub data bit-exact with parity</strong></td><td>Full OK read frame: <code>0x12345678</code> returned LSB-first with correct even parity; <code>cmd</code> decoded as <code>(apNdp=1, rnw=1, addr=1)</code>; target drives ACK+33 data bits and releases on the trailing turnaround.</td></tr>
-<tr><td>3</td><td><strong>DPIDR smoke read</strong></td><td>The §6.6 step 1 exit smoke test: DP read at <code>A[3:2]=00</code> returns the stub's DPIDR constant — the exact transaction OpenOCD issues first after line reset.</td></tr>
-<tr><td>4</td><td><strong>header parity error silences target until line reset</strong></td><td>Request-parity error → <code>ERROR</code>: target undriven for the error frame <em>and</em> for a subsequent well-formed request; no <code>cmd</code> ever reaches the DP; full line reset restores normal operation (verified by a clean read after).</td></tr>
-<tr><td>5</td><td><strong>stop bit error silences target until line reset</strong></td><td>Same protocol-error contract triggered via stop≠0; recovery verified with a clean write.</td></tr>
-<tr><td>6</td><td><strong>WAIT and FAULT skip the data phase</strong></td><td>ACK=WAIT then FAULT for both read and write: correct 3-bit ACK serialization (LSB first), line released immediately after ACK[2] (no data phase), no write commits, and a following OK read works with no reset needed. Also checks all 4 requests still reached the DP (<code>cmds.size == 4</code>).</td></tr>
-<tr><td>7</td><td><strong>back-to-back transactions without idle cycles</strong></td><td>A new request may start on the cycle right after the previous frame ends (write→read with zero idle); both transactions complete bit-exact.</td></tr>
-<tr><td>8</td><td><strong>write data parity error is flagged and recoverable</strong></td><td>Corrupted WDATA parity → commit fires with <code>parityOk=false</code> (WDATAERR material for 2B), data still delivered; <strong>not</strong> a line-level protocol error — the next read succeeds without line reset.</td></tr>
-<tr><td>9</td><td><strong>49 high cycles are not a line reset, 50 are</strong></td><td>The reset threshold exactly: from <code>ERROR</code>, 49 highs + idle leaves the target silent; 50 highs + idle restores it. (The bench breaks the run of 1s after the error header so the park bit can't pre-count toward the 50.)</td></tr>
-</tbody>
-</table>
-</div>
-<p>Embedded in every test via the helpers: turnaround positions (<code>oe</code> window), LSB-first ordering, and the request-phase no-drive rule.</p>
-<hr>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">

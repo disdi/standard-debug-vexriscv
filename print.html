@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b50d2030.js";
+            window.path_to_searchindex_js = "searchindex-9c2ee076.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -539,147 +539,6 @@ phase</strong>, so write data cannot ride in the request.</p>
 <p>The response is latched into a hold register on first sight (<code>rsp.valid</code> may be
 combinational off <code>cmd</code> or held continuously); ACK and RDATA are driven from the
 latched copy for the rest of the frame.</p>
-<h3 id="13-frame-timing-rising-edge-numbering"><a class="header" href="#13-frame-timing-rising-edge-numbering">1.3 Frame timing (rising-edge numbering)</a></h3>
-<p>Request bits are sampled at edges <code>e1..e8</code> (start, APnDP, RnW, A2, A3, parity, stop, park —
-LSB first). <code>cmd</code> fires at <code>e8</code>.</p>
-<p><strong>Read, ACK=OK</strong> (one turnaround each way, target keeps the line between ACK and RDATA):</p>
-<pre><code class="language-text">e1..e8   host request          (target oe=0)
-e9       turnaround            -&gt; target drives ACK[0] at e9
-e9..e11  ACK[0..2]
-e12..e43 RDATA[0..31]          (from rsp.rdata, LSB first)
-e44      even parity of RDATA
-e45      release (oe -&gt; 0)     turnaround back to host
-</code></pre>
-<p><strong>Write, ACK=OK</strong> (two turnarounds around the ACK — the bug the tests caught: sampling one
-edge early captures the turnaround as data bit 0):</p>
-<pre><code class="language-text">e1..e8   host request
-e9       turnaround            -&gt; target drives ACK[0]
-e9..e11  ACK[0..2]
-e12      release (oe -&gt; 0)     \  second turnaround: host takes the line,
-e13      turnaround bit period /  drives its first WDATA bit after it
-e14..e45 WDATA[0..31]          sampled LSB first into a shift register
-e46      parity bit            -&gt; dp.wr fires with data + parityOk verdict
-</code></pre>
-<p><strong>WAIT/FAULT</strong> (either direction): the data phase is skipped — after ACK[2] the target
-releases immediately and returns to idle. (No ORUNDETECT support, so this is unconditional.)</p>
-<h3 id="14-fsm"><a class="header" href="#14-fsm">1.4 FSM</a></h3>
-<p>States: <code>IDLE → HEADER → ACK → {READ_DATA | WR_TRN → WRITE_DATA | RELEASE} → IDLE</code>, plus
-<code>ERROR</code> and <code>RESET_WAIT</code> (power-up init is <code>RESET_WAIT</code>, so the target stays quiet until
-the line is seen low once).</p>
-<ul>
-<li><strong>Protocol error</strong> (request parity, stop≠0, park≠1): enter <code>ERROR</code> — the target stops
-driving and ignores all traffic until line reset (ADIv6.0 §B4.2.5).</li>
-<li><strong>Line reset detector</strong> (independent of the FSM): a saturating counter of consecutive
-<code>swdio.i == 1</code> samples while the target is not driving; at <strong>50</strong> it forces
-<code>RESET_WAIT</code> from <em>any</em> state (including <code>ERROR</code>), which falls to <code>IDLE</code> on the first
-low (idle) cycle. The counter is frozen/cleared while <code>oe=1</code> so target-driven phases
-can't fake a reset.</li>
-</ul>
-<h4 id="141-target-state-machine-for-one-frame-implementation-oriented"><a class="header" href="#141-target-state-machine-for-one-frame-implementation-oriented">1.4.1 Target state machine for one frame (implementation-oriented)</a></h4>
-<p>A practical encoding of Section B4.1–B4.2 from the specification for a <strong>single transaction</strong> on the target.</p>
-<p>This section has two layers:</p>
-<ol>
-<li><strong>§1.4.2 abstract diagram</strong> — phase names aligned with ADI figures (includes <code>TRN_H2T</code> and
-optional <code>OVERRUN_DATA</code>).</li>
-<li><strong>§1.4.3–§1.4.5 Phase 2A <code>SwdPhy</code></strong> — how that diagram maps onto the RTL enum and transitions in
-<code>DebugTransportModuleSwd.scala</code> (<code>case class SwdPhy</code>).</li>
-</ol>
-<hr>
-<h4 id="142-abstract-one-frame-fsm-spec-oriented"><a class="header" href="#142-abstract-one-frame-fsm-spec-oriented">1.4.2 Abstract one-frame FSM (spec-oriented)</a></h4>
-<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/phase2a.svg" alt="phase2a"><span class="img-wrapper"><img src="images/phase2a.svg" alt="phase2a"></span></label></p>
-<hr>
-<h4 id="143-state-inventory--diagram-142--rtl"><a class="header" href="#143-state-inventory--diagram-142--rtl">1.4.3 State inventory — diagram §1.4.2 ↔ RTL</a></h4>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Diagram §1.4.2</th><th>RTL <code>EState</code></th><th>Role</th></tr>
-</thead>
-<tbody>
-<tr><td><code>IDLE</code></td><td><code>IDLE</code></td><td>Wait for Start; between frames (<code>oDrive := False</code>)</td></tr>
-<tr><td><code>HEADER</code></td><td><code>HEADER</code></td><td>LSB-first shift-in after Start; validate at park</td></tr>
-<tr><td><code>TRN_H2T</code></td><td><em>(no named state)</em></td><td><strong>Folded into first cycle of <code>ACK</code></strong></td></tr>
-<tr><td><code>ACK</code></td><td><code>ACK</code></td><td>Drive ACK[0..2] from <code>ackNow</code> / <code>rspHold</code> (<code>cnt</code> 0..2)</td></tr>
-<tr><td><code>READ_DATA</code></td><td><code>READ_DATA</code></td><td>RDATA[0:31] + even parity; keep <code>oe=1</code> after ACK</td></tr>
-<tr><td><code>WR_TRN</code></td><td><code>WR_TRN</code></td><td>Post-ACK turnaround before write (<code>oe=0</code>, 2 cycles)</td></tr>
-<tr><td><code>WRITE_DATA</code></td><td><code>WRITE_DATA</code></td><td>Sample WDATA + parity → <code>dp.wr</code></td></tr>
-<tr><td><code>RELEASE</code></td><td><code>RELEASE</code></td><td>Release after target-driven phase → <code>IDLE</code></td></tr>
-<tr><td><code>ERROR</code></td><td><code>ERROR</code></td><td>Protocol error: do not drive; ignore headers</td></tr>
-<tr><td><code>OVERRUN_DATA</code></td><td><strong>absent</strong></td><td>ORUNDETECT out of scope (WAIT/FAULT always skip data)</td></tr>
-<tr><td><em>(recovery)</em></td><td><code>RESET_WAIT</code></td><td>After line-reset hit; leave on first low → <code>IDLE</code></td></tr>
-</tbody>
-</table>
-</div>
-<hr>
-<h4 id="144-transition-mapping-diagram--rtl"><a class="header" href="#144-transition-mapping-diagram--rtl">1.4.4 Transition mapping (diagram → RTL)</a></h4>
-<h4 id="idle--header--start-bit--1"><a class="header" href="#idle--header--start-bit--1"><code>IDLE → HEADER</code> — Start bit = 1</a></h4>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Diagram</th><th>RTL</th></tr>
-</thead>
-<tbody>
-<tr><td>Start sampled 1</td><td><code>when(dio) { state := HEADER; cnt := 0 }</code> in <code>IDLE</code></td></tr>
-</tbody>
-</table>
-</div>
-<p>Start is <strong>not</strong> stored in <code>hdr</code>; it only opens the header window. Remaining bits are shifted in <code>HEADER</code>.</p>
-<h4 id="header--error-or-valid-exit"><a class="header" href="#header--error-or-valid-exit"><code>HEADER → ERROR</code> or valid exit</a></h4>
-<p>On park edge (<code>cnt === 6</code>), <code>hdr</code> holds APnDP…Stop and <code>dio</code> is Park:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Check</th><th>RTL</th><th>Spec</th></tr>
-</thead>
-<tbody>
-<tr><td>Even parity of APnDP, RnW, A2, A3</td><td><code>(apNdp ^ rnw ^ a2 ^ a3) === hdr(4)</code></td><td>B4.1.6 / B4.2.5</td></tr>
-<tr><td>Stop = 0</td><td><code>stopOk = !hdr(5)</code></td><td>B4.2.5</td></tr>
-<tr><td>Park = 1</td><td><code>dio</code> on that edge</td><td>B4.2.5</td></tr>
-</tbody>
-</table>
-</div>
-<ul>
-<li>Fail → <code>ERROR</code> (silent until line reset).</li>
-<li>Pass → <code>cmdValid</code> pulse (<code>SwdDpCmd</code>: <code>apNdp</code>, <code>rnw</code>, <code>addr</code>) and <code>state := ACK</code><br>(“cmd accepted” on the diagram’s park edge).</li>
-</ul>
-<h4 id="where-is-diagram-trn_h2t"><a class="header" href="#where-is-diagram-trn_h2t">Where is diagram <code>TRN_H2T</code>?</a></h4>
-<p>There is <strong>no</strong> <code>TRN_H2T</code> state. Comment in RTL: <em>“next cycle is the turnaround”</em> after park, then <code>ACK</code> both:</p>
-<ol>
-<li>owns the host→target turnaround cycle (from the host’s view), and</li>
-<li>drives the three ACK bits.</li>
-</ol>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Edge</th><th>Diagram name</th><th>RTL</th></tr>
-</thead>
-<tbody>
-<tr><td>Park</td><td>end of <code>HEADER</code></td><td><code>HEADER</code> → schedule <code>ACK</code>, fire <code>cmd</code></td></tr>
-<tr><td>Next rising edge</td><td><code>TRN_H2T</code> / first ACK drive</td><td>First <code>ACK</code> cycle: <code>oe=1</code>, <code>ACK[0]</code></td></tr>
-<tr><td>Next two edges</td><td>rest of <code>ACK</code></td><td><code>ACK[1]</code>, <code>ACK[2]</code> (<code>cnt</code> 1, 2)</td></tr>
-</tbody>
-</table>
-</div>
-<p>So diagram <strong><code>TRN_H2T</code> + <code>ACK</code></strong> collapse into RTL <strong><code>ACK</code> with <code>cnt = 0,1,2</code></strong>. Same wire timing as Fig B4-1/B4-2; one fewer named state.</p>
-<h4 id="ack---after-three-ack-bits-cnt--2"><a class="header" href="#ack---after-three-ack-bits-cnt--2"><code>ACK → …</code> after three ACK bits (<code>cnt === 2</code>)</a></h4>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Diagram edge</th><th>RTL</th><th>Match?</th></tr>
-</thead>
-<tbody>
-<tr><td>OK ∧ read → <code>READ_DATA</code></td><td><code>ackNow === OK &amp;&amp; cmdPayload.rnw</code> → <code>READ_DATA</code></td><td>Exact</td></tr>
-<tr><td>OK ∧ write → <code>WR_TRN</code></td><td><code>ackNow === OK &amp;&amp; !rnw</code> → <code>WR_TRN</code></td><td>Exact</td></tr>
-<tr><td>≠OK, no overrun → <code>RELEASE</code></td><td>else → <code>RELEASE</code></td><td>Exact</td></tr>
-<tr><td>≠OK ∧ ORUNDETECT → <code>OVERRUN_DATA</code></td><td><strong>never</strong></td><td>By design (scope)</td></tr>
-</tbody>
-</table>
-</div>
-<p>ACK value comes from the <strong>2B seam</strong>, not sticky logic inside 2A:</p>
-<ul>
-<li><code>io.dp.rsp</code> → latched in <code>rspHold</code> when <code>valid</code></li>
-<li><code>ackNow = Mux(rsp.valid, rsp.ack, rspHold.ack)</code></li>
-<li>Encoded LSB-first on the wire: OK=<code>001</code>, WAIT=<code>010</code>, FAULT=<code>100</code></li>
-</ul>
 <h4 id="read-path--read_data--release--idle-fig-b4-2"><a class="header" href="#read-path--read_data--release--idle-fig-b4-2">Read path — <code>READ_DATA → RELEASE → IDLE</code> (Fig B4-2)</a></h4>
 <p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/read_operation.png" alt="Read Operation"><span class="img-wrapper"><img src="images/read_operation.png" alt="Read Operation"></span></label></p>
 <ul>
@@ -710,41 +569,8 @@ optional <code>OVERRUN_DATA</code>).</li>
 <p>Line reset is <strong>orthogonal</strong> (overrides any state): ≥50 consecutive highs on <code>swdio.i</code> while <code>!oDrive</code>; counter frozen/cleared while target drives so ACK/RDATA cannot fake a reset.</p>
 <p><code>RESET_WAIT</code> is an <strong>RTL-only</strong> gate so the target does not accept Start until the line has gone idle after the reset burst. Diagram §1.4.2 draws a direct <code>ERROR → IDLE</code>; recovery contract is the same.</p>
 <hr>
-<h4 id="145-side-by-side-graph"><a class="header" href="#145-side-by-side-graph">1.4.5 Side-by-side graph</a></h4>
-<pre><code class="language-text">Diagram §1.4.2 (abstract)                 SwdPhy RTL
-───────────────────────                 ──────────
-
-[*] → IDLE                              RESET_WAIT → IDLE  (after first low)
-        │                                      │
-        │ Start=1                              │ dio=1
-        ▼                                      ▼
-     HEADER ──bad──► ERROR                  HEADER ──bad──► ERROR
-        │                                      │
-        │ good park                            │ good park (+ cmd pulse)
-        ▼                                      ▼
-    TRN_H2T  ─────────────────────────────►  (implicit; first ACK cycle)
-        │                                      │
-        ▼                                      ▼
-       ACK ──OK∧R──► READ_DATA ──► RELEASE    ACK ──OK∧R──► READ_DATA ──► RELEASE
-        │                 │                     │                 │
-        │ OK∧W            └────────► IDLE       │ OK∧W            └────────► IDLE
-        ▼                                      ▼
-     WR_TRN ──► WRITE_DATA ──► IDLE         WR_TRN ──► WRITE_DATA ──► IDLE
-        │                                      │
-        │ ≠OK (no overrun)                     │ ≠OK
-        ▼                                      ▼
-     RELEASE ──► IDLE                        RELEASE ──► IDLE
-        │
-        │ ≠OK ∧ ORUNDETECT
-        ▼
-   OVERRUN_DATA ──► IDLE                   (not implemented)
-
-  ERROR ──line reset──► IDLE               ERROR ──line reset──► RESET_WAIT ──low──► IDLE
-                                           (line reset also from any other state)
-</code></pre>
-<hr>
 <h2 id="2-how-the-testbench-works--debugswdtest"><a class="header" href="#2-how-the-testbench-works--debugswdtest">2. How the testbench works — <code>DebugSwdTest</code></a></h2>
-<h3 id="21-the-bench-is-the-probe"><a class="header" href="#21-the-bench-is-the-probe">2.1 The bench is the probe</a></h3>
+<h3 id="the-bench-is-the-probe"><a class="header" href="#the-bench-is-the-probe">The bench is the probe</a></h3>
 <p>SWCLK is the DUT clock, and the bench <strong>owns it</strong>: no <code>forkStimulus</code> — every SWCLK cycle is
 one call to <code>step(bit)</code>:</p>
 <pre><code class="language-text">fallingEdge(); set swdio.i = bit;      // host updates while SWCLK low
@@ -756,56 +582,7 @@ the target at the rising edge ending its cycle; a target-driven bit read in cycl
 the value the target registered at edge <em>k−1</em>. All multi-bit values are sent/collected
 LSB first. <code>step</code> returns <code>(o, oe)</code>, so every helper can assert drive/release behavior
 per cycle.</p>
-<h3 id="22-always-ready-stub-dp"><a class="header" href="#22-always-ready-stub-dp">2.2 Always-ready stub DP</a></h3>
-<p>The DP behind the seam is a stub programmed by two vars (<code>stubAck</code>, <code>stubRdata</code>) and
-observed through two queues (<code>cmds</code> — decoded requests, <code>wrs</code> — write commits with the
-parity verdict). A forked thread runs every sampling:</p>
-<ul>
-<li><strong>holds <code>rsp.valid</code> true continuously</strong> with the programmed ack/rdata, and</li>
-<li>records <code>cmd</code>/<code>wr</code> pulses into the queues.</li>
-</ul>
-<p>The always-ready shape is deliberate: the ADI contract requires the DP to answer within
-the turnaround cycle. An earlier stub that <em>reacted</em> to <code>cmd.valid</code> from a sim thread
-arrived one clock late nondeterministically (SpinalSim thread-scheduling race) and produced
-flaky all-zero ACKs — the always-valid response is both race-free and the honest model of
-the combinational 2B register file.</p>
-<h3 id="23-transaction-helpers-assertions-built-in"><a class="header" href="#23-transaction-helpers-assertions-built-in">2.3 Transaction helpers (assertions built in)</a></h3>
-<ul>
-<li><code>header(...)</code> — sends the 8-bit request; can inject <code>flipParity</code> / <code>badStop</code> / <code>badPark</code>;
-asserts the target never drives during the request.</li>
-<li><code>readAck()</code> — collects ACK[0..2]; asserts <code>oe</code> on all three bits.</li>
-<li><code>transactRead(...)</code> — request → trn → ACK; on OK collects 33 target bits asserting <code>oe</code>
-throughout, <strong>recomputes and checks even parity</strong>, then asserts release on the trailing
-turnaround. On WAIT/FAULT asserts the very next cycle is undriven (data phase skipped).</li>
-<li><code>transactWrite(...)</code> — request → trn → ACK; on OK asserts release for the second
-turnaround, then drives 33 bits (optionally with <code>flipDataParity</code>). On WAIT/FAULT same
-skip assertion as reads.</li>
-<li><code>lineReset()</code> — 52 high cycles + 2 idle; <code>idle(n)</code> / <code>ones(n)</code> primitives.</li>
-</ul>
-<p>Each test runs in a fresh sim (<code>compiled.doSim</code>) with reset applied, the stub forked, and
-4 idle cycles before the body.</p>
-<hr>
-<h2 id="3-what-each-test-verifies"><a class="header" href="#3-what-each-test-verifies">3. What each test verifies</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>#</th><th>Test</th><th>Verifies</th></tr>
-</thead>
-<tbody>
-<tr><td>1</td><td><strong>write reaches stub bit-exact</strong></td><td>Full OK write frame: decoded <code>cmd</code> fields <code>(apNdp=0, rnw=0, A[3:2]=2)</code> reach the stub; <code>0xCAFE1234</code> arrives in the commit bit-exact with <code>parityOk=true</code>. Proves WDATA sampling starts after the <em>second</em> turnaround (this test caught the off-by-one that received <code>data &lt;&lt; 1</code>).</td></tr>
-<tr><td>2</td><td><strong>read returns stub data bit-exact with parity</strong></td><td>Full OK read frame: <code>0x12345678</code> returned LSB-first with correct even parity; <code>cmd</code> decoded as <code>(apNdp=1, rnw=1, addr=1)</code>; target drives ACK+33 data bits and releases on the trailing turnaround.</td></tr>
-<tr><td>3</td><td><strong>DPIDR smoke read</strong></td><td>The §6.6 step 1 exit smoke test: DP read at <code>A[3:2]=00</code> returns the stub's DPIDR constant — the exact transaction OpenOCD issues first after line reset.</td></tr>
-<tr><td>4</td><td><strong>header parity error silences target until line reset</strong></td><td>Request-parity error → <code>ERROR</code>: target undriven for the error frame <em>and</em> for a subsequent well-formed request; no <code>cmd</code> ever reaches the DP; full line reset restores normal operation (verified by a clean read after).</td></tr>
-<tr><td>5</td><td><strong>stop bit error silences target until line reset</strong></td><td>Same protocol-error contract triggered via stop≠0; recovery verified with a clean write.</td></tr>
-<tr><td>6</td><td><strong>WAIT and FAULT skip the data phase</strong></td><td>ACK=WAIT then FAULT for both read and write: correct 3-bit ACK serialization (LSB first), line released immediately after ACK[2] (no data phase), no write commits, and a following OK read works with no reset needed. Also checks all 4 requests still reached the DP (<code>cmds.size == 4</code>).</td></tr>
-<tr><td>7</td><td><strong>back-to-back transactions without idle cycles</strong></td><td>A new request may start on the cycle right after the previous frame ends (write→read with zero idle); both transactions complete bit-exact.</td></tr>
-<tr><td>8</td><td><strong>write data parity error is flagged and recoverable</strong></td><td>Corrupted WDATA parity → commit fires with <code>parityOk=false</code> (WDATAERR material for 2B), data still delivered; <strong>not</strong> a line-level protocol error — the next read succeeds without line reset.</td></tr>
-<tr><td>9</td><td><strong>49 high cycles are not a line reset, 50 are</strong></td><td>The reset threshold exactly: from <code>ERROR</code>, 49 highs + idle leaves the target silent; 50 highs + idle restores it. (The bench breaks the run of 1s after the error header so the park bit can't pre-count toward the 50.)</td></tr>
-</tbody>
-</table>
-</div>
-<p>Embedded in every test via the helpers: turnaround positions (<code>oe</code> window), LSB-first ordering, and the request-phase no-drive rule.</p>
-<hr><div style="break-before: page; page-break-before: always;"></div>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="phase-2b--sw-dp-register-file-implementation--verification"><a class="header" href="#phase-2b--sw-dp-register-file-implementation--verification">Phase 2B — SW-DP Register File: Implementation &amp; Verification</a></h1>
 <p><strong>Status:</strong> implemented and sim-verified (Jul 2026)</p>
 <p><strong>Tasks:</strong></p>
@@ -849,8 +626,6 @@ slave flows) and exposes a <strong>new AP seam</strong> toward Phase 2C:</p>
 <pre><code class="language-text">ap.cmd : master Flow(SwdApCmd)   -- rnw, addr = A[3:2], apSel = SELECT[31:24], wdata
 ap.rsp : slave  Flow(SwdApRsp)   -- error, data (completion; test-controlled latency)
 </code></pre>
-<p><code>SwdPhyDp</code> assembles <code>SwdPhy</code> + <code>SwdDp</code> and is the step-1b DUT: SWD pins on one side,
-AP seam on the other.</p>
 <h3 id="12-dp-register-map-swd-a32-encoding"><a class="header" href="#12-dp-register-map-swd-a32-encoding">1.2 DP register map (SWD <code>A[3:2]</code> encoding)</a></h3>
 <div class="table-wrapper">
 <table>
@@ -865,128 +640,88 @@ AP seam on the other.</p>
 </tbody>
 </table>
 </div>
-<p>CTRL/STAT implemented bits: ORUNDETECT[0] (stored only), STICKYORUN[1], STICKYCMP[4],
-STICKYERR[5], WDATAERR[7], CDBGPWRUPREQ/ACK[28/29], CSYSPWRUPREQ/ACK[30/31] — the ACKs
-mirror the REQs. All other bits read as zero.</p>
-<p>The DPIDR default has a non-ARM DESIGNER field (<code>[11:1] = 0x555</code>, bit0 = 1, DPv1) — a
-deliberate placeholder to be replaced per the identification rules before any
-host-tool integration.</p>
-<h3 id="13-ack-policy-the-waitfault-generation-deferred-from-2a"><a class="header" href="#13-ack-policy-the-waitfault-generation-deferred-from-2a">1.3 ACK policy (the WAIT/FAULT generation deferred from 2A)</a></h3>
-<p>Decided combinationally off the registered <code>cmd</code> pulse, so the answer lands within the
-turnaround as the 2A contract requires:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Condition</th><th>ACK</th><th>Scope</th></tr>
-</thead>
-<tbody>
-<tr><td>any sticky flag set</td><td><strong>FAULT</strong></td><td>AP accesses and RDBUFF reads only (ADIv5.2 §B4.2.4) — DPIDR/CTRL·STAT/SELECT/ABORT/RESEND keep answering OK so the host can diagnose and clear</td></tr>
-<tr><td>AP transaction outstanding</td><td><strong>WAIT</strong></td><td>AP accesses and RDBUFF reads — DP accesses (e.g. CTRL/STAT polling) still OK</td></tr>
-<tr><td>otherwise</td><td><strong>OK</strong></td><td>the access itself only happens on OK</td></tr>
-</tbody>
-</table>
-</div>
-<p>FAULT takes precedence over WAIT.</p>
-<h3 id="14-posted-ap-reads-write-commit-stickies"><a class="header" href="#14-posted-ap-reads-write-commit-stickies">1.4 Posted AP reads, write commit, stickies</a></h3>
-<ul>
-<li><strong>AP read</strong> (ACK=OK): answered immediately from <code>rdBuffer</code> (posted semantics — the
-<em>previous</em> result), while the new access is launched on <code>ap.cmd</code>. Completion loads
-<code>rdBuffer</code>; <code>RDBUFF</code>/<code>RESEND</code> then return it without launching anything.</li>
-<li><strong>AP write</strong> (ACK=OK): launched only at the WDATA <strong>commit</strong> (<code>SwdDpWrite</code> with
-<code>parityOk</code>), carrying the data. Busy until completion.</li>
-<li><strong>STICKYERR</strong>: set by a completion with <code>error=1</code> (the completion's data is discarded).</li>
-<li><strong>WDATAERR</strong>: set when the WDATA phase fails parity — the commit is dropped (DP register
-writes and AP writes alike). Not a line-level protocol error; no line reset needed.</li>
-<li><strong>DAPABORT</strong>: clears busy and marks the in-flight completion to be discarded when it
-eventually arrives, so a stale response cannot corrupt <code>rdBuffer</code>.</li>
-<li><strong>DP writes</strong> commit at the WDATA phase too: the DP remembers the last OK-acked write
-target (<code>last.pendingWrite</code>) from the request; WAIT/FAULT frames produce no commit
-(2A skips their data phase), so a gated write can never take effect.</li>
-</ul>
-<h3 id="15-graphical-model--spec-intent-vs-rtl-side-by-side-as-in-phase2amd-14"><a class="header" href="#15-graphical-model--spec-intent-vs-rtl-side-by-side-as-in-phase2amd-14">1.5 Graphical model — spec intent vs RTL (side-by-side, as in Phase2A.md §1.4)</a></h3>
-<p>Phase 2B is not a per-frame FSM like <code>SwdPhy</code> — it is a register file plus an <strong>access
-decision</strong> made once per request and a small amount of persistent state (stickies, busy,
-read buffer, pending-write). The diagrams therefore show the decision/dataflow rather
-than wire states.</p>
-<h4 id="151-abstract-model-adiv52-b42-behavior"><a class="header" href="#151-abstract-model-adiv52-b42-behavior">1.5.1 Abstract model (ADIv5.2 §B4.2 behavior)</a></h4>
-<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/phase2b-1.png" alt="phase2b-1"><span class="img-wrapper"><img src="images/phase2b-1.png" alt="phase2b-1"></span></label></p>
-<p>The most 2B-specific behavior — the posted AP read — as a sequence:</p>
-<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/phase2b-2.png" alt="phase2b-2"><span class="img-wrapper"><img src="images/phase2b-2.png" alt="phase2b-2"></span></label></p>
-<h4 id="152-swddp-rtl--the-same-flow-in-signals"><a class="header" href="#152-swddp-rtl--the-same-flow-in-signals">1.5.2 <code>SwdDp</code> RTL — the same flow in signals</a></h4>
-<p><strong>Source:</strong> <code>spinal.lib.cpu.riscv.debug.SwdDp</code> (three concurrent paths: request,
-WDATA commit, AP completion — no FSM, one decision per <code>cmd</code> pulse).</p>
-<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/phase2b-3.png" alt="phase2b-3"><span class="img-wrapper"><img src="images/phase2b-3.png" alt="phase2b-3"></span></label></p>
-<h4 id="153-element-inventory--abstract--rtl"><a class="header" href="#153-element-inventory--abstract--rtl">1.5.3 Element inventory — abstract ↔ RTL</a></h4>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Abstract (§1.5.1)</th><th>RTL construct</th><th>Notes</th></tr>
-</thead>
-<tbody>
-<tr><td>sticky flags</td><td><code>stickyOrun/stickyCmp/stickyErr/wdataErr</code> regs</td><td>only <code>stickyErr</code>/<code>wdataErr</code> hardware-set (scope)</td></tr>
-<tr><td>"AP outstanding"</td><td><code>apBusy</code> reg</td><td>set at launch, cleared at completion / DAPABORT</td></tr>
-<tr><td>read buffer</td><td><code>rdBuffer</code> reg</td><td>serves AP-read RDATA, RDBUFF <strong>and</strong> RESEND</td></tr>
-<tr><td>ACK decision</td><td>combinational mux off the <code>cmd</code> pulse</td><td>FAULT &gt; WAIT &gt; OK; lands within the turnaround</td></tr>
-<tr><td>"access not performed"</td><td>launches/commits gated on <code>ack == OK</code></td><td><code>apRdFire</code>, <code>last.pendingWrite</code></td></tr>
-<tr><td>write accepted, data later</td><td><code>last.pendingWrite/isApReg/addrReg</code> regs</td><td>the request↔commit link across the WDATA phase</td></tr>
-<tr><td>AP write launch</td><td><code>apWrFire</code> at <code>wr.valid</code></td><td>carries <code>wr.data</code>; not at the request</td></tr>
-<tr><td>completion → buffer</td><td><code>apWasRead</code> gate</td><td>write completions can't clobber <code>rdBuffer</code></td></tr>
-<tr><td>DAPABORT</td><td><code>apDiscard</code> flag</td><td>RTL-only: in-flight completion dropped safely</td></tr>
-</tbody>
-</table>
-</div>
-<h4 id="154-side-by-side-graph"><a class="header" href="#154-side-by-side-graph">1.5.4 Side-by-side graph</a></h4>
-<pre><code class="language-text">Abstract (ADIv5.2 B4.2)                        SwdDp RTL
-───────────────────────                        ─────────
-request ──sticky?(AP/RDBUFF)──► FAULT          cmd.valid ──anySticky &amp;&amp; gated──► ack=FAULT
-   │ no                                             │
-   ├────busy?(AP/RDBUFF)──────► WAIT                ├──apBusy &amp;&amp; gated──────────► ack=WAIT
-   │ no                                             │
-   ▼                                                ▼
-  OK ──DP read──► DPIDR/CTRL·STAT/                ack=OK ── !apNdp &amp;&amp; rnw ──► dpReadData mux
-   │              RESEND/RDBUFF                     │
-   ├──AP read──► previous result                    ├── apRdFire ──► rdata=rdBuffer,
-   │             + launch new read                  │                ap.cmd, apBusy:=1
-   │                                                │
-   └──write───► ACK now, data later                 └── last.pendingWrite := True
-                      │                                            │
-             WDATA parity ok?                            wr.valid: parityOk?
-              no  → WDATAERR, drop                        no  → wdataErr := True
-              yes → ABORT / register /                    yes → ABORT/CTRL·STAT/SELECT
-                    AP write launch                             or apWrFire ──► ap.cmd
-
-completion ── error ──► STICKYERR              ap.rsp.valid ── error ──► stickyErr := 1
-           └─ data  ──► read buffer                         └─ apWasRead ──► rdBuffer := data
-                                               (apDiscard: DAPABORT'd completion dropped)
+<p>These two diagrams put it back on the
+wire, making explicit <strong>where each step of a DP access is accomplished</strong>: the frame shape is
+Phase 2A (<code>SwdPhy</code>), the register semantics are Phase 2B (<code>SwdDp</code>). Neither phase performs a
+DP access on its own.</p>
+<p><strong>A DP read</strong> — DPIDR, <code>A[3:2] = 00</code></p>
+<p><em>Wire layout</em> — one cell per SWCLK bit period, LSB first within every multi-bit field:</p>
+<pre><code class="language-mermaid">packet-beta
+0: "Start"
+1: "APnDP 0"
+2: "RnW 1"
+3: "A2"
+4: "A3"
+5: "Par"
+6: "Stop"
+7: "Park"
+8: "Trn"
+9-11: "ACK OK — on the wire 1,0,0"
+12-43: "RDATA 32 bits LSB first — DPIDR 0x0BA11AAB"
+44: "Par"
+45: "Trn"
 </code></pre>
-<h4 id="155-match--difference-summary"><a class="header" href="#155-match--difference-summary">1.5.5 Match / difference summary</a></h4>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Aspect</th><th>Match?</th></tr>
-</thead>
-<tbody>
-<tr><td>ACK precedence FAULT &gt; WAIT &gt; OK</td><td><strong>Yes</strong></td></tr>
-<tr><td>Sticky FAULT scoped to AP + RDBUFF; other DP accesses keep working</td><td><strong>Yes</strong> (ADIv5.2 §B4.2.4)</td></tr>
-<tr><td>Posted AP read: previous result now, new result to buffer</td><td><strong>Yes</strong> — spec leaves first-read data implementation-defined; RTL returns <code>rdBuffer</code></td></tr>
-<tr><td>Write ACKed at request, committed after WDATA parity</td><td><strong>Yes</strong> (<code>last.pendingWrite</code>)</td></tr>
-<tr><td>WDATAERR on data-phase parity fail, commit dropped, no line reset needed</td><td><strong>Yes</strong></td></tr>
-<tr><td>RESEND</td><td><strong>Alias of <code>rdBuffer</code></strong> — same value as RDBUFF, no relaunch</td></tr>
-<tr><td>ORUNDETECT / STICKYORUN / STICKYCMP hardware behavior</td><td><strong>No</strong> — stored/clearable only (deliberate scope)</td></tr>
-<tr><td>Power-up REQ→ACK handshake</td><td><strong>Mirrored</strong>, no power controller modeled</td></tr>
-<tr><td><code>apDiscard</code> (DAPABORT in-flight drop), <code>apWasRead</code> gate</td><td><strong>RTL-only</strong> robustness details</td></tr>
-</tbody>
-</table>
-</div>
-<p><strong>One-sentence takeaway:</strong> §1.5.1 is the ADI access contract; <code>SwdDp</code> implements it as one
-combinational decision per request plus three concurrent signal paths (request / commit /
-completion), with <code>last.*</code> bridging the ACK-before-data gap that defines SWD writes.</p>
-<hr>
-<h3 id="16-scope-limits-deliberate"><a class="header" href="#16-scope-limits-deliberate">1.6 Scope limits (deliberate)</a></h3>
-<p>ORUNDETECT is stored but overrun detection is <strong>not implemented</strong> — STICKYORUN and
-STICKYCMP are never set by hardware, only ABORT-clearable · CTRL/STAT banks other than 0
-(DLCR etc.) are RAZ/WI · TARGETSEL is v2 and ignored · power-up ACKs mirror REQs rather
-than modeling a power controller.</p>
+<p>Bits 0–7 host-driven · bits 9–44 target-driven · bits 8 and 45 are turnarounds where
+neither side drives and SWDIO floats to its mandatory pull-up. The closing turnaround is
+one <strong>bit period</strong> on the wire but two SWCLK cycles in RTL (<code>RELEASE</code>), because <code>SwdPhy</code>
+registers its outputs — see the step-ownership table below.</p>
+<p><em>Phase ownership</em>:</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    autonumber
+    participant H as Host (probe)
+    participant PHY as SwdPhy — Phase 2A
+    participant DP as SwdDp — Phase 2B
+
+    H-&gt;&gt;PHY: 8 request bits — start, APnDP=0, RnW=1, A=00, parity, stop, park
+    Note over PHY: HEADER state — LSB-first shift-in,&lt;br/&gt;parity + stop + park validated (2A)
+    PHY-&gt;&gt;DP: cmd {apNdp=0, rnw=1, addr=00}
+    DP--&gt;&gt;PHY: rsp {ack=OK, rdata=DPIDR} — combinational off cmd.valid
+    Note over DP: dpReadData mux selects DPIDR (0x0BA11AAB),  ACK precedence FAULT, WAIT, OK (2B)
+    Note over PHY: rspHold latches rsp for the rest of the frame
+    PHY--&gt;&gt;H: turnaround — 1 bit period, nobody drives
+    PHY--&gt;&gt;H: ACK = OK, on the wire LSB-first as 1,0,0
+    PHY--&gt;&gt;H: 32 RDATA bits LSB-first + even parity
+    PHY--&gt;&gt;H: RELEASE — 2 cycles, line handed back
+</code></pre>
+<p><strong>A DP write</strong> — SELECT, <code>A[3:2] = 10</code></p>
+<p><em>Wire layout</em> — note the second turnaround at bit 12, absent from the read:</p>
+<pre><code class="language-mermaid">packet-beta
+0: "Start"
+1: "APnDP 0"
+2: "RnW 0"
+3: "A2"
+4: "A3"
+5: "Par"
+6: "Stop"
+7: "Park"
+8: "Trn"
+9-11: "ACK OK — on the wire 1,0,0"
+12: "Trn"
+13-44: "WDATA 32 bits LSB first — SELECT value"
+45: "Par"
+</code></pre>
+<p>Bits 0–7 host-driven · bits 9–11 target-driven · bits 13–45 host-driven again · bits 8
+and 12 are turnarounds. <strong>This layout is the reason the 2A↔2B seam has three flows</strong>: the
+target must commit to the ACK at bits 9–11, thirty-two bit periods before the data it is
+acknowledging exists on the wire.</p>
+<p><em>Phase ownership</em>:</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    autonumber
+    participant H as Host (probe)
+    participant PHY as SwdPhy — Phase 2A
+    participant DP as SwdDp — Phase 2B
+
+    H-&gt;&gt;PHY: 8 request bits — start, APnDP=0, RnW=0, A=10, parity, stop, park
+    PHY-&gt;&gt;DP: cmd {apNdp=0, rnw=0, addr=10}
+    DP--&gt;&gt;PHY: rsp {ack=OK} — no data yet, this is a write
+    Note over DP: last.pendingWrite := True,&lt;br/&gt;last.addrReg := 10 (SELECT) — the ACK-before-data bridge (2B)
+    PHY--&gt;&gt;H: turnaround, then ACK = OK as 1,0,0
+    PHY--&gt;&gt;H: WR_TRN — second turnaround, line handed back to the host
+    H-&gt;&gt;PHY: 32 WDATA bits LSB-first + parity
+    Note over PHY: WRITE_DATA state — shift in, verify even parity (2A)
+    PHY-&gt;&gt;DP: wr {data, parityOk}
+    Note over DP: parity ok → SELECT := data, parity fail → wdataErr := True, commit dropped (2B)
+</code></pre>
 <hr>
 <h2 id="2-testbench-changes"><a class="header" href="#2-testbench-changes">2. Testbench changes</a></h2>
 <h3 id="21-shared-driver-extraction"><a class="header" href="#21-shared-driver-extraction">2.1 Shared driver extraction</a></h3>
@@ -1007,29 +742,6 @@ WAIT-while-busy directly testable (the AP simply <em>doesn't respond</em> until 
 </ul>
 <p>Sugar wrappers keep tests readable: <code>dpRead/dpWrite/apRead/apWrite</code> map to driver
 transactions with <code>APnDP</code> set accordingly.</p>
-<hr>
-<h2 id="3-what-each-test-verifies-1"><a class="header" href="#3-what-each-test-verifies-1">3. What each test verifies</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>#</th><th>Test</th><th>Verifies</th></tr>
-</thead>
-<tbody>
-<tr><td>1</td><td><strong>DPIDR read returns the configured value</strong></td><td>The step-1b headline: a real DPIDR from the register file (no stub), bit-exact against the elaboration parameter.</td></tr>
-<tr><td>2</td><td><strong>CTRL/STAT power-up requests mirror ACKs</strong></td><td>CTRL/STAT reads as 0 fresh; writing CDBGPWRUPREQ+CSYSPWRUPREQ (<code>0x50000000</code>) reads back <code>0xF0000000</code> — REQs stored, ACKs mirrored. Also proves the DP write path commits at the WDATA phase.</td></tr>
-<tr><td>3</td><td><strong>SELECT DPBANKSEL banks CTRL/STAT</strong></td><td>With DPBANKSEL=1 the CTRL/STAT address reads as zero (unimplemented bank, still ACK=OK); switching back to bank 0 restores the real register.</td></tr>
-<tr><td>4</td><td><strong>AP read is posted; RDBUFF returns the completed result</strong></td><td>ADI posted-read semantics end-to-end: first AP read returns the stale buffer while launching the access; RDBUFF returns the completion; a second AP read returns the <em>previous</em> result while posting the next.</td></tr>
-<tr><td>5</td><td><strong>WAIT while an AP access is outstanding; DP accesses stay OK</strong></td><td>WAIT generation (deferred from 2A): AP read and RDBUFF get WAIT while busy; CTRL/STAT polling still answers OK — the exact behavior a host retry loop relies on.</td></tr>
-<tr><td>6</td><td><strong>AP completion error sets STICKYERR; FAULT until ABORT clears</strong></td><td>The sticky-error contract: FAULT on AP + RDBUFF, DPIDR/CTRL·STAT unaffected, STICKYERR visible in CTRL/STAT, cleared <strong>only</strong> via ABORT.STKERRCLR, then normal operation resumes.</td></tr>
-<tr><td>7</td><td><strong>Write data parity error sets WDATAERR and drops the commit</strong></td><td>A DP write with corrupted WDATA parity is ACKed OK (ACK precedes data) but never commits — the power bits stay clear while WDATAERR sets; FAULT gating applies; ABORT.WDERRCLR clears.</td></tr>
-<tr><td>8</td><td><strong>AP write commits after the data phase and holds busy</strong></td><td>The AP write launches only at the WDATA commit with bit-exact data, holds WAIT for subsequent AP accesses until completion, and the write completion does <strong>not</strong> clobber <code>rdBuffer</code>.</td></tr>
-<tr><td>9</td><td><strong>RESEND returns the same value as RDBUFF</strong></td><td>The DP-read <code>A[3:2]=10</code> decode: both RESEND and RDBUFF return the posted result without launching a new AP access.</td></tr>
-</tbody>
-</table>
-</div>
-<p>Everything from Phase 2A (turnaround positions, LSB-first, parity, line reset,
-protocol-error silence) is still enforced on every transaction by the shared driver's
-embedded assertions — now exercised against the real DP.</p>
 <hr>
 <h2 id="4-verification"><a class="header" href="#4-verification">4. Verification</a></h2>
 <pre><code class="language-sh">cd ~/fpga/pythondata-cpu-vexriscv-smp/pythondata_cpu_vexriscv_smp/verilog/ext/VexRiscv
@@ -1137,7 +849,7 @@ includes the sticky flags in the assertion message (<code>ackCheck</code>) — t
 the phantom-completion bug (§4.2). The <code>sim(name, seed = …)</code> hook pins a failing seed
 for deterministic reproduction.</li>
 </ul>
-<h2 id="3-what-each-test-verifies-2"><a class="header" href="#3-what-each-test-verifies-2">3. What each test verifies</a></h2>
+<h2 id="3-what-each-test-verifies"><a class="header" href="#3-what-each-test-verifies">3. What each test verifies</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
