@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b8642757.js";
+            window.path_to_searchindex_js = "searchindex-013bb5d6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -748,25 +748,6 @@ sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest vexriscv.Debu
 <h1 id="system-integration--swd"><a class="header" href="#system-integration--swd">System Integration — SWD</a></h1>
 <p>Goal is <strong>host-visible integration only</strong> (LiteX SoC, OpenOCD, GDB). Target-side SWD
 RTL (<code>SwdPhy</code> / <code>SwdDp</code> / <code>SwdDmiGateway</code>) is Phase <strong>2A–2C</strong> and is not re-defined here.</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Step</th><th>Content</th><th>Status</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>1</strong></td><td>Cluster / <code>core.py</code> / <code>swdremote</code> / <code>litex_sim</code> + OpenOCD raw-AP smoke</td><td>✅ Completed</td></tr>
-<tr><td><strong>2</strong></td><td>Custom OpenOCD <code>riscv</code> glue + GDB</td><td>✅ Completed (<strong>Vexriscv fork</strong>: master + Gerrit 9786)</td></tr>
-<tr><td><strong>3</strong></td><td>Arty pinout + CMSIS-DAP (SWD mode) + Phase 4 regressions</td><td>[ ] <strong>Next</strong></td></tr>
-<tr><td>—</td><td>Finalize placeholder <code>DPIDR</code> / <code>AP_IDR</code> if host scripts hard-code them</td><td>[ ] Still open (placeholders ship from Phase 2C)</td></tr>
-</tbody>
-</table>
-</div>
-<p><strong>Invariant</strong></p>
-<ul>
-<li>Official RISC-V DM only (<code>withPrivilegedDebug</code>).</li>
-<li>One debug transport per build — <strong>no</strong> JTAG-DTM + SWD-DTM on the same <code>DebugBus</code>
-without arbitration. Do <strong>not</strong> set <code>JTAG_SIM=1</code> and <code>SWD_SIM=1</code> together.</li>
-</ul>
 <hr>
 <p><strong>Code repositories</strong></p>
 <ul>
@@ -796,49 +777,7 @@ VexRiscv gateway</strong> backend for the Phase 2C <code>DMI_ADDR</code> / <code
 <p>Upstream’s stock <code>riscv</code> target <strong>rejects <code>-dap</code></strong> at argument parsing, so Tcl-only
 <code>dap apreg</code> helpers cannot drive a GDB session — that is why the 9786 + gateway path exists.</p>
 <hr>
-<h2 id="swd-specific-tasks"><a class="header" href="#swd-specific-tasks">SWD specific tasks</a></h2>
-<h3 id="step-1-done--litex--smoke"><a class="header" href="#step-1-done--litex--smoke">Step 1 (done) — LiteX + smoke</a></h3>
-<ul>
-<li><input disabled="" type="checkbox" checked=""> <code>DebugTransportModuleSwd</code> with <code>io.swclk</code> (<strong>input</strong>, probe-driven) + <code>io.swdio</code> as <code>i</code>/<code>o</code>/<code>oe</code> — Phase <strong>2A–2C</strong></li>
-<li><input disabled="" type="checkbox" checked=""> <code>withSwdTransport()</code> on <code>DebugModuleFiber</code> (mutually exclusive with <code>withJtagTap()</code> per build) — Phase <strong>2C</strong></li>
-<li><input disabled="" type="checkbox" checked=""> LiteX SMP cluster: <code>swd</code> param, <code>--swd</code> CLI, three-wire <code>debugPort_swclk</code> / <code>swdio_{i,o,oe}</code>, <code>noTap</code> guarded <code>!jtagTap &amp;&amp; !swd</code></li>
-<li><input disabled="" type="checkbox" checked=""> LiteX sim: <code>--with-swd-debug</code>, <code>_Swd</code> netlist token, <code>add_swd()</code>, <code>swdremote</code> on TCP <strong>44854</strong></li>
-<li><input disabled="" type="checkbox" checked=""> OpenOCD smoke on sim: DPIDR <code>0x0ba11aab</code> + <code>dap apreg</code> → <code>dmstatus</code> <code>0x004c0c82</code></li>
-<li><input disabled="" type="checkbox" checked=""> OpenOCD cfgs: <code>openocd_swd_remote.cfg</code> + <code>vexriscv_swd.cfg</code> (DAP + <code>vexriscv_dmi_read/write</code> + smoke)</li>
-<li><input disabled="" type="checkbox" checked=""> Cluster asserts: reject <code>swd &amp;&amp; jtagTap</code>; require <code>privilegedDebug</code> when <code>swd</code></li>
-</ul>
-<h3 id="step-2-done--host-tooling--gdb-vexriscv-fork"><a class="header" href="#step-2-done--host-tooling--gdb-vexriscv-fork">Step 2 (done) — host tooling + GDB (Vexriscv fork)</a></h3>
-<ul>
-<li><input disabled="" type="checkbox" checked=""> OpenOCD <code>riscv</code> target over SWD via master + Gerrit 9786 + VexRiscv DTM backend
-(<a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">disdi/openocd <code>vexriscv-gateway</code></a>)
-<ul>
-<li>Exit met: halt / resume / register read of the <strong>sim CPU</strong> over SWD</li>
-<li>Config: <code>vexriscv_swd_riscv_master.cfg</code> (<code>dtm create -type vexriscv-gateway</code>)</li>
-</ul>
-</li>
-<li><input disabled="" type="checkbox" checked=""> Real hart examine (not Phase 2C stub): <code>XLEN=32</code>, <code>misa=0x40141101</code> (RV32IMA + S/U)</li>
-<li><input disabled="" type="checkbox" checked=""> GDB: <code>target extended-remote :3333</code>, attach, <code>info registers</code>, disassembly, memory R/W</li>
-<li><input disabled="" type="checkbox"> Finalize <code>DPIDR</code> / <code>AP_IDR</code> before host scripts hard-code them
-<ul>
-<li>Placeholders from Phase <strong>2C</strong>: <code>DPIDR=0x0BA11AAB</code>, <code>AP_IDR=0x74726976</code> (“triv”)</li>
-<li>Must <strong>not</strong> look like ARM Cortex SW-DP (<code>0x2ba01477</code> / DESIGNER <code>0x23B</code>)</li>
-</ul>
-</li>
-</ul>
-<h3 id="step-2b-done--demo-run-control-in-sim"><a class="header" href="#step-2b-done--demo-run-control-in-sim">Step 2b (done) — demo run control in sim</a></h3>
-<ul>
-<li><input disabled="" type="checkbox" checked=""> Preload <code>demo.bin</code> into <code>main_ram</code> (<code>--ram-init=demo.bin</code>); GDB loads <strong>symbols only</strong> from <code>demo/demo.elf</code></li>
-<li><input disabled="" type="checkbox" checked=""> <code>break main</code> / <code>continue</code> / <code>bt</code> over SWD on the Vexriscv fork</li>
-<li><input disabled="" type="checkbox" checked=""> <strong>Never</strong> GDB <code>load</code> in SWD sim (hours at <code>swdremote</code> pacing)</li>
-</ul>
-<h3 id="step-3-open--hardware"><a class="header" href="#step-3-open--hardware">Step 3 (open) — hardware</a></h3>
-<ul>
-<li><input disabled="" type="checkbox"> Arty pinout + CMSIS-DAP in <strong>SWD mode</strong></li>
-<li><input disabled="" type="checkbox"> Probe docs (CMSIS-DAP / J-Link / ST-Link) for SWD, not ARM Cortex auto-detect</li>
-<li><input disabled="" type="checkbox"> Phase 4 regressions on real silicon</li>
-</ul>
-<hr>
-<h2 id="host-attach-workflows-sim"><a class="header" href="#host-attach-workflows-sim">Host attach workflows (sim)</a></h2>
+<h2 id="host-attach-workflows"><a class="header" href="#host-attach-workflows">Host attach workflows</a></h2>
 <h3 id="side-by-side"><a class="header" href="#side-by-side">Side-by-side</a></h3>
 <div class="table-wrapper">
 <table>
@@ -987,8 +926,9 @@ and <code>set remotetimeout 120</code>.</p>
 </tbody>
 </table>
 </div>
+<p><strong>SWD Reading dmstatus, all the way down</strong></p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/swd_flow.png" alt="flow"><span class="img-wrapper"><img src="images/swd_flow.png" alt="flow"></span></label></p>
 <p><strong>Terminal 1 — sim (keep running)</strong></p>
-<p>Do <strong>not</strong> pass <code>--jtag-tap</code> / <code>--with-jtagremote</code> here.</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -1088,20 +1028,6 @@ continue
 bt
 </code></pre>
 <p>Expected: stop at <code>main</code> (typically around <code>0x4000069c</code>); <code>bt</code> shows <code>#0  main ()</code>.</p>
-<hr>
-<h2 id="open-items-not-blocking-sim-three-terminal"><a class="header" href="#open-items-not-blocking-sim-three-terminal">Open items (not blocking sim three-terminal)</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Item</th><th>Notes</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>Arty + CMSIS-DAP</strong></td><td>Next host-visible milestone</td></tr>
-<tr><td><strong><code>DPIDR</code> / <code>AP_IDR</code> finalize</strong></td><td>Placeholders still <code>0x0BA11AAB</code> / <code>0x74726976</code></td></tr>
-<tr><td><strong>Gerrit 9786 merge</strong></td><td>Published at <a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">disdi/openocd <code>vexriscv-gateway</code></a>; 9786 still unmerged upstream (plus two fixes on that branch)</td></tr>
-</tbody>
-</table>
-</div>
 <hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
 <h3 id="phase-4-verification-and-testing"><a class="header" href="#phase-4-verification-and-testing">Phase 4: Verification and Testing</a></h3>
