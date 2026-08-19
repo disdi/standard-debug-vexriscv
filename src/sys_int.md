@@ -4,19 +4,6 @@
 Goal is **host-visible integration only** (LiteX SoC, OpenOCD, GDB). Target-side SWD
 RTL (`SwdPhy` / `SwdDp` / `SwdDmiGateway`) is Phase **2A–2C** and is not re-defined here.
 
-| Step | Content | Status |
-| --- | --- | --- |
-| **1** | Cluster / `core.py` / `swdremote` / `litex_sim` + OpenOCD raw-AP smoke | ✅ Completed |
-| **2** | Custom OpenOCD `riscv` glue + GDB | ✅ Completed (**Vexriscv fork**: master + Gerrit 9786) |
-| **3** | Arty pinout + CMSIS-DAP (SWD mode) + Phase 4 regressions | [ ] **Next** |
-| — | Finalize placeholder `DPIDR` / `AP_IDR` if host scripts hard-code them | [ ] Still open (placeholders ship from Phase 2C) |
-
-**Invariant**
-
-- Official RISC-V DM only (`withPrivilegedDebug`).
-- One debug transport per build — **no** JTAG-DTM + SWD-DTM on the same `DebugBus`
-  without arbitration. Do **not** set `JTAG_SIM=1` and `SWD_SIM=1` together.
-
 ---
 
 **Code repositories**
@@ -46,45 +33,7 @@ Upstream’s stock `riscv` target **rejects `-dap`** at argument parsing, so Tcl
 
 ---
 
-## SWD specific tasks
-
-### Step 1 (done) — LiteX + smoke
-
-- [x] `DebugTransportModuleSwd` with `io.swclk` (**input**, probe-driven) + `io.swdio` as `i`/`o`/`oe` — Phase **2A–2C**
-- [x] `withSwdTransport()` on `DebugModuleFiber` (mutually exclusive with `withJtagTap()` per build) — Phase **2C**
-- [x] LiteX SMP cluster: `swd` param, `--swd` CLI, three-wire `debugPort_swclk` / `swdio_{i,o,oe}`, `noTap` guarded `!jtagTap && !swd`
-- [x] LiteX sim: `--with-swd-debug`, `_Swd` netlist token, `add_swd()`, `swdremote` on TCP **44854**
-- [x] OpenOCD smoke on sim: DPIDR `0x0ba11aab` + `dap apreg` → `dmstatus` `0x004c0c82`
-- [x] OpenOCD cfgs: `openocd_swd_remote.cfg` + `vexriscv_swd.cfg` (DAP + `vexriscv_dmi_read/write` + smoke)
-- [x] Cluster asserts: reject `swd && jtagTap`; require `privilegedDebug` when `swd`
-
-### Step 2 (done) — host tooling + GDB (Vexriscv fork)
-
-- [x] OpenOCD `riscv` target over SWD via master + Gerrit 9786 + VexRiscv DTM backend
-  ([disdi/openocd `vexriscv-gateway`](https://github.com/disdi/openocd/tree/vexriscv-gateway))
-  - Exit met: halt / resume / register read of the **sim CPU** over SWD
-  - Config: `vexriscv_swd_riscv_master.cfg` (`dtm create -type vexriscv-gateway`)
-- [x] Real hart examine (not Phase 2C stub): `XLEN=32`, `misa=0x40141101` (RV32IMA + S/U)
-- [x] GDB: `target extended-remote :3333`, attach, `info registers`, disassembly, memory R/W
-- [ ] Finalize `DPIDR` / `AP_IDR` before host scripts hard-code them
-  - Placeholders from Phase **2C**: `DPIDR=0x0BA11AAB`, `AP_IDR=0x74726976` (“triv”)
-  - Must **not** look like ARM Cortex SW-DP (`0x2ba01477` / DESIGNER `0x23B`)
-
-### Step 2b (done) — demo run control in sim
-
-- [x] Preload `demo.bin` into `main_ram` (`--ram-init=demo.bin`); GDB loads **symbols only** from `demo/demo.elf`
-- [x] `break main` / `continue` / `bt` over SWD on the Vexriscv fork
-- [x] **Never** GDB `load` in SWD sim (hours at `swdremote` pacing)
-
-### Step 3 (open) — hardware
-
-- [ ] Arty pinout + CMSIS-DAP in **SWD mode**
-- [ ] Probe docs (CMSIS-DAP / J-Link / ST-Link) for SWD, not ARM Cortex auto-detect
-- [ ] Phase 4 regressions on real silicon
-
----
-
-## Host attach workflows (sim)
+## Host attach workflows
 
 ### Side-by-side
 
@@ -228,9 +177,11 @@ and `set remotetimeout 120`.
 | `vexriscv_swd.cfg` | SW-DP + DAP + `vexriscv_dmi_read/write` + `vexriscv_swd_smoke` — **no** `riscv` target |
 | `vexriscv_swd_riscv_master.cfg` | Vexriscv fork: `dtm create -type vexriscv-gateway` + `riscv` + `gdb-attach halt` |
 
-**Terminal 1 — sim (keep running)**
+**SWD Reading dmstatus, all the way down**
 
-Do **not** pass `--jtag-tap` / `--with-jtagremote` here.
+![flow](images/swd_flow.png)
+
+**Terminal 1 — sim (keep running)**
 
 | Goal | Extra flag |
 | --- | --- |
@@ -350,15 +301,5 @@ bt
 ```
 
 Expected: stop at `main` (typically around `0x4000069c`); `bt` shows `#0  main ()`.
-
----
-
-## Open items (not blocking sim three-terminal)
-
-| Item | Notes |
-| --- | --- |
-| **Arty + CMSIS-DAP** | Next host-visible milestone |
-| **`DPIDR` / `AP_IDR` finalize** | Placeholders still `0x0BA11AAB` / `0x74726976` |
-| **Gerrit 9786 merge** | Published at [disdi/openocd `vexriscv-gateway`](https://github.com/disdi/openocd/tree/vexriscv-gateway); 9786 still unmerged upstream (plus two fixes on that branch) |
 
 ---
