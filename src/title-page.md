@@ -9,11 +9,11 @@ Below are milestones planned in the project:
 - [Phase 2A](./Phase2A.md) SWD protocol state machine (`SwdPhy`)
 - [Phase 2B](./Phase2B.md) SW-DP register file (`SwdDp`)
 - [Phase 2C](./Phase2C.md) DMI gateway + clock crossing
-- [Phase 3](./sys_int.md) Integration (LiteX sim, OpenOCD, GDB)
+- [Phase 3](./sys_int.md) Integration (LiteX sim + Arty, OpenOCD, GDB)
 - [Phase 4](./veri_test.md) Testing
 - [Phase 5](./docu.md) Documentation
 
-### Status snapshot (sim)
+### Status snapshot
 
 | Area | Status |
 | --- | --- |
@@ -21,8 +21,9 @@ Below are milestones planned in the project:
 | Phase 3 step 1 (LiteX + raw-AP smoke) | ✅ DPIDR + `dmstatus` over SWD |
 | Phase 3 step 2 (`riscv` + GDB) | ✅ Vexriscv fork — [disdi/openocd `vexriscv-gateway`](https://github.com/disdi/openocd/tree/vexriscv-gateway) (master + Gerrit 9786 + VexRiscv gateway) |
 | Phase 3 step 2b (demo `break` / `continue`) | ✅ Preload path on the Vexriscv fork; no GDB `load` in sim |
-| Phase 3 step 3 (Arty + CMSIS-DAP) | [ ] Next |
-| Phase 4–5 | Partial — host sim paths done; hardware / full matrix open |
+| Phase 3 step 3 (JTAG on Arty) | ✅ 2026-08-20 — tunneled DTM via BSCANE2 USER4; on-board FT2232. Operator how-to: [Phase 3](./sys_int.md) |
+| Phase 3 step 3 (SWD on Arty) | ✅ 2026-08-29 — MCU-Link CMSIS-DAP → Pmod JB; smoke + `riscv` examine + GDB `load` / `break` / `stepi`. Operator how-to: [Phase 3](./sys_int.md) |
+| Phase 4–5 | Partial — sim and Arty attach done; full regression matrix and placeholder `DPIDR` / `AP_IDR` still open |
 
 **Conformance note:** the [RISC-V Debug Specification](https://docs.riscv.org/reference/debug/)
 defines only a **JTAG** DTM. SWD is a **custom DTM** (explicitly permitted). Claim
