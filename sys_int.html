@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-20d4ec09.js";
+            window.path_to_searchindex_js = "searchindex-ee944b6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -475,6 +475,7 @@ bt
 <tr><td>USB</td><td>On-board FTDI FT2232HQ — <strong>USB-JTAG (programming) + USB-UART (console)</strong> on one cable</td></tr>
 <tr><td>Programmer</td><td>OpenOCD via <code>openocd_xc7_ft2232.cfg</code> + <code>bscan_spi_xc7a35t.bit</code></td></tr>
 <tr><td>PMOD connectors</td><td>JA/JB/JC/JD → <code>pmoda</code>/<code>pmodb</code>/<code>pmodc</code>/<code>pmodd</code></td></tr>
+<tr><td>SWD probe</td><td>External CMSIS-DAP (MCU-Link) on <strong>Pmod JB</strong> — not the on-board FTDI</td></tr>
 </tbody>
 </table>
 </div>
@@ -514,15 +515,51 @@ bt
 <h3 id="swd-on-arty--end-to-end-workflow"><a class="header" href="#swd-on-arty--end-to-end-workflow">SWD on Arty — end-to-end workflow</a></h3>
 <p>Official stack only (<code>--with-swd-debug</code>; that flag implies <code>--with-privileged-debug</code>).
 One transport per bitstream — do not combine with <code>--jtag-tap</code>.</p>
-<p><code>--with-swd-debug</code> alone is <strong>not enough</strong> on hardware. Unlike JTAG, this needs an <strong>external CMSIS-DAP probe</strong> and two <strong>user I/O</strong> pins.</p>
+<p><code>--with-swd-debug</code> alone is <strong>not enough</strong> on hardware. Unlike JTAG (which reuses the on-board FT2232 as a tunneled TAP), SWD needs an <strong>external CMSIS-DAP probe</strong> and two <strong>user I/O</strong> pins. Pinout lives in
+<a href="https://github.com/disdi/linux-on-litex-vexriscv/blob/swd-arty/soc_linux.py"><code>soc_linux.py</code></a>
+(<code>_swd_pmod_io</code> / <code>add_cpu_swd_debug</code>) on
+<a href="https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty">https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty</a>.</p>
 <p><strong>Prerequisites</strong></p>
 <ul>
 <li>Arty</li>
-<li>CMSIS-DAP probe (MCU-Link is the verified one)</li>
+<li>CMSIS-DAP probe (MCU-Link is the verified one) + jumper wires</li>
 <li>OpenOCD <strong>master</strong> for the raw-AP smoke; the <strong>Vexriscv fork</strong>
 (<a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">disdi/openocd <code>vexriscv-gateway</code></a>) for GDB support.</li>
 <li><code>riscv64-unknown-elf-gdb</code></li>
 </ul>
+<p><strong>Hardware connection</strong></p>
+<p>Two USB cables to the host. The FTDI does <strong>not</strong> carry SWD.</p>
+<pre><code class="language-text">Host PC
+ ├─ USB ── FT2232 (Arty J10) ── bitstream load + UART console
+ └─ USB ── MCU-Link (CMSIS-DAP)
+              SWCLK ──► JB3 ──► cluster swd_clk ──► SwdPhy
+              SWDIO ◄─► JB7 ── IOBUF (swdio_i / o / oe)
+                                 └── SwdPhy → SwdDp → DMI gateway → DebugModule
+</code></pre>
+<p><code>--with-swd-debug</code> brings SWCLK / SWDIO out on <strong>Pmod JB</strong> (high-speed header: no 200 Ω series resistors, which matters for bidirectional SWDIO turnaround). Do <strong>not</strong> use JA or JD.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Signal</th><th>LiteX pin</th><th>Pmod JB</th><th>FPGA ball</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>SWCLK</strong></td><td><code>pmodb:2</code></td><td><strong>JB3</strong></td><td><code>D15</code></td><td>Probe-driven, gated clock</td></tr>
+<tr><td><strong>SWDIO</strong></td><td><code>pmodb:4</code></td><td><strong>JB7</strong></td><td><code>J17</code></td><td>Bidirectional; FPGA <code>PULLUP TRUE</code> (ADI)</td></tr>
+<tr><td><strong>GND</strong></td><td>—</td><td>JB pin 5 or 11</td><td>—</td><td>Common ground (required)</td></tr>
+<tr><td><strong>3.3 V (VTref)</strong></td><td>—</td><td>JB pin 6 or 12</td><td>—</td><td>Optional; probe senses I/O voltage</td></tr>
+</tbody>
+</table>
+</div>
+<p>Looking into the 12-pin Pmod:</p>
+<pre><code class="language-text">JB1  JB2  JB3=SWCLK  JB4  GND  3V3
+JB7=SWDIO JB8  JB9   JB10 GND  3V3
+</code></pre>
+<p>MCU-Link 10-pin Cortex debug header → Arty:</p>
+<pre><code class="language-text">MCU-Link pin 4 (SWCLK)  → Arty JB3
+MCU-Link pin 2 (SWDIO)  → Arty JB7
+MCU-Link pin 3 or 5 (GND) → Arty JB GND
+MCU-Link pin 1 (VTref)  → Arty JB 3V3   (optional, recommended)
+</code></pre>
 <p><strong>Configs</strong></p>
 <div class="table-wrapper">
 <table>
@@ -537,7 +574,7 @@ One transport per bitstream — do not combine with <code>--jtag-tap</code>.</p>
 </table>
 </div>
 <p>Terminal 1 — Build and Flash on Arty</p>
-<pre><code class="language-bash">#   Use https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty
+<pre><code class="language-bash">#   Support for SWD added to https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty
 ./make.py --board=arty --cpu-count=1 --with-swd-debug --build --load
 </code></pre>
 <p>The first SWD build regenerates the cluster via sbt (no <code>_Swd</code> netlist ships prebuilt).
