@@ -8,10 +8,10 @@ RTL (`SwdPhy` / `SwdDp` / `SwdDmiGateway`) is Phase **2A–2C** and is not re-de
 
 **Code repositories**
 
-- LiteX — https://github.com/disdi/litex/tree/swd
-- VexRiscv — https://github.com/disdi/VexRiscv/tree/phase3
-- OpenOCD (Vexriscv fork) — https://github.com/disdi/openocd/tree/vexriscv-gateway
-- Linux-on-litex-vexriscv - https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty
+- LiteX — <https://github.com/disdi/litex/tree/swd>
+- VexRiscv — <https://github.com/disdi/VexRiscv/tree/phase3>
+- OpenOCD (Vexriscv fork) — <https://github.com/disdi/openocd/tree/vexriscv-gateway>
+- Linux-on-litex-vexriscv - <https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty>
 
 Update submodules in
 [pythondata-cpu-vexriscv_smp](https://github.com/disdi/pythondata-cpu-vexriscv_smp)
@@ -323,8 +323,8 @@ Reference manual: <https://digilent.com/reference/programmable-logic/arty-a7/ref
 
 Official stack only (`--with-privileged-debug` only).
 
-`--with-privileged-debug` alone is **not enough** on hardware. Without `--jtag-tap` the DTM is tunneled, and its `debugPort_*` signals need a vendor boundary-scan primitive which is added as a separate MR in linux-on-litex-vexriscv : 
-https://github.com/litex-hub/linux-on-litex-vexriscv/pull/458
+`--with-privileged-debug` alone is **not enough** on hardware. Without `--jtag-tap` the DTM is tunneled, and its `debugPort_*` signals need a vendor boundary-scan primitive which is added as a separate MR in linux-on-litex-vexriscv:
+<https://github.com/litex-hub/linux-on-litex-vexriscv/pull/458>
 
 **Prerequisites**
 

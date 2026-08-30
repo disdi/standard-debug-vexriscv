@@ -1,14 +1,14 @@
 # Phase 2C — DMI Gateway, Clock Crossing & DebugModule Integration
 
 **Code Repository :**
-- pythondata-cpu-vexriscv_smp - https://github.com/disdi/pythondata-cpu-vexriscv_smp/tree/phase2c
+- pythondata-cpu-vexriscv_smp - <https://github.com/disdi/pythondata-cpu-vexriscv_smp/tree/phase2c>
 
 OR
 
 Update submodules in [pythondata-cpu-vexriscv_smp](https://github.com/disdi/pythondata-cpu-vexriscv_smp) to below :
 
-- SpinalHdl - https://github.com/disdi/SpinalHDL/tree/phase2c
-- VexRiscv - https://github.com/disdi/VexRiscv/tree/phase2c
+- SpinalHdl - <https://github.com/disdi/SpinalHDL/tree/phase2c>
+- VexRiscv - <https://github.com/disdi/VexRiscv/tree/phase2c>
 
 | Artifact | Path |
 |---|---|

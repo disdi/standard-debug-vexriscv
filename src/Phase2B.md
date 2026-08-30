@@ -4,8 +4,8 @@
 
 Update submodules in [pythondata-cpu-vexriscv_smp](https://github.com/disdi/pythondata-cpu-vexriscv_smp) to below :
 
-- SpinalHdl - https://github.com/disdi/SpinalHDL/tree/phase2b
-- VexRiscv - https://github.com/disdi/VexRiscv/tree/phase2b
+- SpinalHdl - <https://github.com/disdi/SpinalHDL/tree/phase2b>
+- VexRiscv - <https://github.com/disdi/VexRiscv/tree/phase2b>
 
 
 | Artifact | Path |
