@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-013bb5d6.js";
+            window.path_to_searchindex_js = "searchindex-15db9572.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -188,11 +188,11 @@
 <li><a href="#phase-2a--swd-protocol-state-machine-implementation--verification">Phase 2A</a> SWD protocol state machine (<code>SwdPhy</code>)</li>
 <li><a href="#phase-2b--sw-dp-register-file-implementation--verification">Phase 2B</a> SW-DP register file (<code>SwdDp</code>)</li>
 <li><a href="#phase-2c--dmi-gateway-clock-crossing--debugmodule-integration">Phase 2C</a> DMI gateway + clock crossing</li>
-<li><a href="#system-integration--swd">Phase 3</a> Integration (LiteX sim, OpenOCD, GDB)</li>
+<li><a href="#system-integration--swd">Phase 3</a> Integration (LiteX sim + Arty, OpenOCD, GDB)</li>
 <li><a href="#testing">Phase 4</a> Testing</li>
 <li><a href="#documentation">Phase 5</a> Documentation</li>
 </ul>
-<h3 id="status-snapshot-sim"><a class="header" href="#status-snapshot-sim">Status snapshot (sim)</a></h3>
+<h3 id="status-snapshot"><a class="header" href="#status-snapshot">Status snapshot</a></h3>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -203,8 +203,9 @@
 <tr><td>Phase 3 step 1 (LiteX + raw-AP smoke)</td><td>✅ DPIDR + <code>dmstatus</code> over SWD</td></tr>
 <tr><td>Phase 3 step 2 (<code>riscv</code> + GDB)</td><td>✅ Vexriscv fork — <a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">disdi/openocd <code>vexriscv-gateway</code></a> (master + Gerrit 9786 + VexRiscv gateway)</td></tr>
 <tr><td>Phase 3 step 2b (demo <code>break</code> / <code>continue</code>)</td><td>✅ Preload path on the Vexriscv fork; no GDB <code>load</code> in sim</td></tr>
-<tr><td>Phase 3 step 3 (Arty + CMSIS-DAP)</td><td>[ ] Next</td></tr>
-<tr><td>Phase 4–5</td><td>Partial — host sim paths done; hardware / full matrix open</td></tr>
+<tr><td>Phase 3 step 3 (JTAG on Arty)</td><td>✅ 2026-08-20 — tunneled DTM via BSCANE2 USER4; on-board FT2232. Operator how-to: <a href="#system-integration--swd">Phase 3</a></td></tr>
+<tr><td>Phase 3 step 3 (SWD on Arty)</td><td>✅ 2026-08-29 — MCU-Link CMSIS-DAP → Pmod JB; smoke + <code>riscv</code> examine + GDB <code>load</code> / <code>break</code> / <code>stepi</code>. Operator how-to: <a href="#system-integration--swd">Phase 3</a></td></tr>
+<tr><td>Phase 4–5</td><td>Partial — sim and Arty attach done; full regression matrix and placeholder <code>DPIDR</code> / <code>AP_IDR</code> still open</td></tr>
 </tbody>
 </table>
 </div>
@@ -754,6 +755,7 @@ RTL (<code>SwdPhy</code> / <code>SwdDp</code> / <code>SwdDmiGateway</code>) is P
 <li>LiteX — https://github.com/disdi/litex/tree/swd</li>
 <li>VexRiscv — https://github.com/disdi/VexRiscv/tree/phase3</li>
 <li>OpenOCD (Vexriscv fork) — https://github.com/disdi/openocd/tree/vexriscv-gateway</li>
+<li>Linux-on-litex-vexriscv - https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty</li>
 </ul>
 <p>Update submodules in
 <a href="https://github.com/disdi/pythondata-cpu-vexriscv_smp">pythondata-cpu-vexriscv_smp</a>
@@ -777,7 +779,7 @@ VexRiscv gateway</strong> backend for the Phase 2C <code>DMI_ADDR</code> / <code
 <p>Upstream’s stock <code>riscv</code> target <strong>rejects <code>-dap</code></strong> at argument parsing, so Tcl-only
 <code>dap apreg</code> helpers cannot drive a GDB session — that is why the 9786 + gateway path exists.</p>
 <hr>
-<h2 id="host-attach-workflows"><a class="header" href="#host-attach-workflows">Host attach workflows</a></h2>
+<h2 id="simulation-based-workflow-using-verilator"><a class="header" href="#simulation-based-workflow-using-verilator">Simulation based workflow using verilator</a></h2>
 <h3 id="side-by-side"><a class="header" href="#side-by-side">Side-by-side</a></h3>
 <div class="table-wrapper">
 <table>
@@ -786,7 +788,7 @@ VexRiscv gateway</strong> backend for the Phase 2C <code>DMI_ADDR</code> / <code
 </thead>
 <tbody>
 <tr><td><strong>1 — sim</strong></td><td><code>litex_sim … --with-privileged-debug --jtag-tap --with-jtagremote</code> → TCP <strong>44853</strong> (<code>jtagremote</code>)</td><td><code>litex_sim … --with-privileged-debug --with-swd-debug --with-swdremote</code> → TCP <strong>44854</strong> (<code>swdremote</code>); add <code>--ram-init=demo.bin</code> for demo debug</td></tr>
-<tr><td><strong>2 — OpenOCD</strong></td><td>Stock <code>riscv</code> target + BSCAN tunnel; examines hart; GDB <strong>:3333</strong></td><td><code>transport select swd</code> + DAP + <strong>Vexriscv fork</strong> <code>riscv</code>; examines hart; GDB <strong>:3333</strong></td></tr>
+<tr><td><strong>2 — OpenOCD</strong></td><td>Stock <code>riscv</code> target + <strong>fabric</strong> TAP — no vendor BSCAN in sim; examines hart; GDB <strong>:3333</strong></td><td><code>transport select swd</code> + DAP + <strong>Vexriscv fork</strong> <code>riscv</code>; examines hart; GDB <strong>:3333</strong></td></tr>
 <tr><td><strong>3 — GDB</strong></td><td><code>target extended-remote localhost:3333</code> → halt / regs / <code>load</code></td><td>attach + regs ✅; demo <strong><code>break main</code> / <code>continue</code> / <code>bt</code></strong> ✅ via <strong>preload</strong> (no GDB <code>load</code>)</td></tr>
 </tbody>
 </table>
@@ -1028,6 +1030,127 @@ continue
 bt
 </code></pre>
 <p>Expected: stop at <code>main</code> (typically around <code>0x4000069c</code>); <code>bt</code> shows <code>#0  main ()</code>.</p>
+<hr>
+<h2 id="hardware-based-workflow-using-arty"><a class="header" href="#hardware-based-workflow-using-arty">Hardware based workflow using Arty</a></h2>
+<p>Reference manual: <a href="https://digilent.com/reference/programmable-logic/arty-a7/reference-manual">https://digilent.com/reference/programmable-logic/arty-a7/reference-manual</a></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th></th><th></th></tr>
+</thead>
+<tbody>
+<tr><td>Device</td><td><code>xc7a35ticsg324-1L</code> (<code>a7-35</code> variant)</td></tr>
+<tr><td>System clock</td><td><code>clk100</code>, 100 MHz</td></tr>
+<tr><td>USB</td><td>On-board FTDI FT2232HQ — <strong>USB-JTAG (programming) + USB-UART (console)</strong> on one cable</td></tr>
+<tr><td>Programmer</td><td>OpenOCD via <code>openocd_xc7_ft2232.cfg</code> + <code>bscan_spi_xc7a35t.bit</code></td></tr>
+<tr><td>PMOD connectors</td><td>JA/JB/JC/JD → <code>pmoda</code>/<code>pmodb</code>/<code>pmodc</code>/<code>pmodd</code></td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="jtag-on-arty--end-to-end-workflow"><a class="header" href="#jtag-on-arty--end-to-end-workflow">JTAG on Arty — end-to-end workflow</a></h3>
+<p>Official stack only (<code>--with-privileged-debug</code> only).</p>
+<p><code>--with-privileged-debug</code> alone is <strong>not enough</strong> on hardware. Without <code>--jtag-tap</code> the DTM is tunneled, and its <code>debugPort_*</code> signals need a vendor boundary-scan primitive which is added as a separate MR in linux-on-litex-vexriscv :
+https://github.com/litex-hub/linux-on-litex-vexriscv/pull/458</p>
+<p><strong>Prerequisites</strong></p>
+<ul>
+<li>Arty</li>
+<li>OpenOCD master with standard RISC-V target</li>
+<li><code>riscv64-unknown-elf-gdb</code></li>
+</ul>
+<p><strong>Configs</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>File</th><th>Role</th></tr>
+</thead>
+<tbody>
+<tr><td><code>openocd_arty_bscan.cfg</code></td><td>Fits on-board FT2232 into the Xilinx TAP</td></tr>
+<tr><td><code>openocd_arty_official.cfg</code></td><td>JTAG on Arty hardware. Composes <code>openocd_arty_bscan.cfg</code> (adapter + Xilinx TAP) with <code>riscv_jtag_tunneled.tcl</code> (the <code>riscv</code> target + <code>use_bscan_tunnel</code>).</td></tr>
+</tbody>
+</table>
+</div>
+<p>Terminal 1 — Build and Flash on Arty</p>
+<pre><code class="language-bash"># Use MR https://github.com/litex-hub/linux-on-litex-vexriscv/pull/458
+./make.py --board=arty --cpu-count=1 --with-privileged-debug --build --load
+</code></pre>
+<p>Terminal 2 — OpenOCD (after Terminal 1 is up)</p>
+<pre><code class="language-bash">openocd -f litex/litex/tools/debug/openocd_arty_official.cfg
+</code></pre>
+<p>Terminal 3 — GDB (after OpenOCD is ready)</p>
+<pre><code class="language-bash">riscv64-unknown-elf-gdb -ex "set arch riscv:rv32"   -ex "target extended-remote localhost:3333"   linux-on-litex-vexriscv/build/arty/software/bios/bios.elf
+</code></pre>
+<hr>
+<h3 id="swd-on-arty--end-to-end-workflow"><a class="header" href="#swd-on-arty--end-to-end-workflow">SWD on Arty — end-to-end workflow</a></h3>
+<p>Official stack only (<code>--with-swd-debug</code>; that flag implies <code>--with-privileged-debug</code>).
+One transport per bitstream — do not combine with <code>--jtag-tap</code>.</p>
+<p><code>--with-swd-debug</code> alone is <strong>not enough</strong> on hardware. Unlike JTAG, this needs an <strong>external CMSIS-DAP probe</strong> and two <strong>user I/O</strong> pins.</p>
+<p><strong>Prerequisites</strong></p>
+<ul>
+<li>Arty</li>
+<li>CMSIS-DAP probe (MCU-Link is the verified one)</li>
+<li>OpenOCD <strong>master</strong> for the raw-AP smoke; the <strong>Vexriscv fork</strong>
+(<a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">disdi/openocd <code>vexriscv-gateway</code></a>) for GDB support.</li>
+<li><code>riscv64-unknown-elf-gdb</code></li>
+</ul>
+<p><strong>Configs</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>File</th><th>Role</th></tr>
+</thead>
+<tbody>
+<tr><td><code>openocd_arty_swd.cfg</code></td><td>CMSIS-DAP adapter. Hardware sibling of <code>openocd_swd_remote.cfg</code> — same DAP/DMI helpers, <code>remote_bitbang</code> swapped for <code>cmsis-dap</code> + <code>usb_bulk</code>.</td></tr>
+<tr><td><code>vexriscv_swd.cfg</code></td><td>SW-DP + DAP + <code>vexriscv_dmi_read/write</code> + <code>vexriscv_swd_smoke</code> — <strong>reused from sim, unchanged</strong></td></tr>
+<tr><td><code>vexriscv_swd_riscv_master.cfg</code></td><td>Vexriscv fork: <code>dtm create -type vexriscv-gateway</code> + <code>riscv</code> + <code>gdb-attach halt</code> — <strong>reused from sim, unchanged</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p>Terminal 1 — Build and Flash on Arty</p>
+<pre><code class="language-bash">#   Use https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty
+./make.py --board=arty --cpu-count=1 --with-swd-debug --build --load
+</code></pre>
+<p>The first SWD build regenerates the cluster via sbt (no <code>_Swd</code> netlist ships prebuilt).
+Expected name: <code>VexRiscvLitexSmpCluster_Cc1_…_Ood_Pd_Hb1_Swd</code>.</p>
+<p>Terminal 2 — raw-AP smoke (stock master; no GDB)</p>
+<pre><code class="language-bash">openocd -s tcl \
+  -f litex/litex/tools/debug/openocd_arty_swd.cfg \
+  -f litex/litex/tools/debug/vexriscv_swd.cfg \
+  -c init -c vexriscv_swd_smoke -c shutdown
+</code></pre>
+<p>Success indicators:</p>
+<pre><code class="language-text">Info : SWD DPIDR 0x0ba11aab
+AP_IDR   = 0x74726976
+dmstatus = 0x004c0c82 (version=2 authenticated=1 allrunning=1 allhalted=0)
+PASS: SWD -&gt; SW-DP -&gt; DMI gateway -&gt; DebugModule
+</code></pre>
+<p><code>dmstatus</code> is bit-identical to the sim value.</p>
+<p>Terminal 2 — <code>riscv</code> target + GDB server (Vexriscv fork: <a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">disdi/openocd <code>vexriscv-gateway</code></a>)</p>
+<pre><code class="language-bash"># Use the openocd binary built from:
+#   https://github.com/disdi/openocd/tree/vexriscv-gateway
+openocd -s tcl \
+  -f litex/litex/tools/debug/openocd_arty_swd.cfg \
+  -f litex/litex/tools/debug/vexriscv_swd.cfg \
+  -f litex/litex/tools/debug/vexriscv_swd_riscv_master.cfg
+</code></pre>
+<p>Success indicators:</p>
+<pre><code class="language-text">Info : SWD DPIDR 0x0ba11aab
+Info : [vexriscv.rv] Examined RISC-V core
+Info : [vexriscv.rv]  XLEN=32, misa=0x40141101
+</code></pre>
+<p><code>misa=0x40141101</code> = RV32 I+M+A+S+U.</p>
+<p>Terminal 3 — GDB (after OpenOCD is ready)</p>
+<pre><code class="language-bash">riscv64-unknown-elf-gdb -ex "set arch riscv:rv32"   -ex "target extended-remote localhost:3333"   linux-on-litex-vexriscv/build/arty/software/bios/bios.elf
+</code></pre>
+<p>Hardware is not limited the way sim is: GDB <code>load</code> and <code>stepi</code> both work (CMSIS-DAP at
+1 MHz vs <code>swdremote</code> pacing). Debug <code>demo.elf</code> (linked at <code>0x40000000</code>):</p>
+<pre><code class="language-gdb">monitor halt
+load demo/demo.elf
+set $pc = 0x40000000
+break main
+continue
+bt
+</code></pre>
+<p>Expected: stop at <code>main</code> (typically around <code>0x4000069c</code>); <code>bt</code> shows <code>#0  main ()</code>.</p>
 <hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
 <h3 id="phase-4-verification-and-testing"><a class="header" href="#phase-4-verification-and-testing">Phase 4: Verification and Testing</a></h3>
@@ -1064,15 +1187,16 @@ the broader regression matrix — much of it still open, especially on hardware.
 <ul>
 <li><input disabled="" type="checkbox" checked=""> Phase 2A–2C architecture chapters in this book (<code>SwdPhy</code> / <code>SwdDp</code> / <code>SwdDmiGateway</code>)</li>
 <li><input disabled="" type="checkbox" checked=""> Operator how-to for <strong>sim</strong> three-terminal attach (JTAG and SWD) — <a href="#system-integration--swd">Phase 3</a></li>
+<li><input disabled="" type="checkbox" checked=""> Operator how-to for <strong>Arty hardware</strong> (JTAG via BSCANE2 USER4; SWD via MCU-Link CMSIS-DAP on Pmod JB) — <a href="#system-integration--swd">Phase 3</a></li>
 <li><input disabled="" type="checkbox" checked=""> Document placeholder <code>DPIDR</code>, <code>AP_IDR</code>, and Phase 2C <code>DMI_ADDR</code> / <code>DMI_DATA</code> / <code>POSTED_READ</code> map (see <a href="#phase-2c--dmi-gateway-clock-crossing--debugmodule-integration">Phase 2C</a>)</li>
+<li><input disabled="" type="checkbox" checked=""> Published OpenOCD Vexriscv fork: <a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">disdi/openocd <code>vexriscv-gateway</code></a> (9786 + fixes + gateway; still unmerged upstream)</li>
 </ul>
 <h4 id="still-open-1"><a class="header" href="#still-open-1">Still open</a></h4>
 <ul>
-<li><input disabled="" type="checkbox"> Broader user-facing guide beyond sim (FPGA CMSIS-DAP, probe-rs, multi-probe notes)</li>
+<li><input disabled="" type="checkbox"> Broader user-facing guide beyond this stack (probe-rs, multi-probe notes)</li>
 <li><input disabled="" type="checkbox"> Finalize published identification constants once IDs leave placeholder status</li>
 <li><input disabled="" type="checkbox"> Document which optional RISC-V debug-spec features are implemented vs stubbed
 (<code>dmstatus.version</code>, abstract commands surface, triggers, SBA)</li>
-<li><input disabled="" type="checkbox" checked=""> Published OpenOCD Vexriscv fork: <a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">disdi/openocd <code>vexriscv-gateway</code></a> (9786 + fixes + gateway; still unmerged upstream)</li>
 </ul>
 <hr>
                     </main>
