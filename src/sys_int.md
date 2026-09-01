@@ -9,7 +9,8 @@ RTL (`SwdPhy` / `SwdDp` / `SwdDmiGateway`) is Phase **2A–2C** and is not re-de
 **Code repositories**
 
 - LiteX — <https://github.com/disdi/litex/tree/swd>
-- VexRiscv & SpinalHDL — <https://github.com/disdi/pythondata-cpu-vexriscv_smp/tree/phase2c>
+- VexRiscv - <https://github.com/SpinalHDL/VexRiscv/pull/483>
+- SpinalHDL - <https://github.com/SpinalHDL/SpinalHDL/pull/1956>
 - OpenOCD (Vexriscv fork) — <https://github.com/disdi/openocd/tree/vexriscv-gateway>
 - Linux-on-litex-vexriscv - <https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty>
 
