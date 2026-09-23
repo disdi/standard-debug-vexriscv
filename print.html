@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-98d8e247.js";
+            window.path_to_searchindex_js = "searchindex-ee5fb77c.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -751,13 +751,23 @@ sbt -batch "testOnly vexriscv.DebugSwdTest vexriscv.DebugSwdDpTest vexriscv.Debu
 RTL (<code>SwdPhy</code> / <code>SwdDp</code> / <code>SwdDmiGateway</code>) is Phase <strong>2A–2C</strong> and is not re-defined here.</p>
 <hr>
 <p><strong>Code repositories</strong></p>
-<ul>
-<li>LiteX — <a href="https://github.com/disdi/litex/tree/swd">https://github.com/disdi/litex/tree/swd</a></li>
-<li>VexRiscv - <a href="https://github.com/SpinalHDL/VexRiscv/pull/483">https://github.com/SpinalHDL/VexRiscv/pull/483</a></li>
-<li>SpinalHDL - <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1956">https://github.com/SpinalHDL/SpinalHDL/pull/1956</a></li>
-<li>OpenOCD (Vexriscv fork) — <a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">https://github.com/disdi/openocd/tree/vexriscv-gateway</a></li>
-<li>Linux-on-litex-vexriscv - <a href="https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty">https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty</a></li>
-</ul>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Piece</th><th>Where</th><th>Status</th></tr>
+</thead>
+<tbody>
+<tr><td>SWD DTM (<code>DebugTransportModuleSwd</code>) + <code>DebugModuleFiber.withSwdTransport()</code></td><td>SpinalHDL <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1956">#1956</a></td><td>merged 2026-09-08</td></tr>
+<tr><td><code>spinal.lib.com.swd</code> split (<code>Swd</code> / <code>SwdPhy</code> / <code>SwdDp</code>)</td><td>SpinalHDL <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1966">#1966</a></td><td>merged 2026-09-19</td></tr>
+<tr><td>VexRiscv SMP cluster <code>--swd</code></td><td>VexRiscv <a href="https://github.com/SpinalHDL/VexRiscv/pull/483">#483</a>, <a href="https://github.com/SpinalHDL/VexRiscv/pull/499">#499</a></td><td>merged 2026-09-08 / 09-19</td></tr>
+<tr><td><strong>VexiiRiscv</strong> LiteX SoC <code>--with-swd</code> + MicroSoc <code>--swd</code></td><td>VexiiRiscv <a href="https://github.com/SpinalHDL/VexiiRiscv/pull/184">#184</a></td><td>merged 2026-09-23</td></tr>
+<tr><td>JTAG on Xilinx USER chains (<code>add_cpu_jtag_debug</code>, <code>--with-cpu-jtag-debug</code>)</td><td>LiteX <a href="https://github.com/enjoy-digital/litex/pull/2572">#2572</a> + linux-on-litex-vexriscv <a href="https://github.com/litex-hub/linux-on-litex-vexriscv/pull/459">#459</a></td><td>merged 2026-09-10</td></tr>
+<tr><td>LiteX: <code>swdremote</code> sim module, OpenOCD configs, <code>--with-swd-debug</code> for <code>vexriscv_smp</code></td><td><a href="https://github.com/disdi/litex/tree/swd">https://github.com/disdi/litex/tree/swd</a></td><td>branch, not yet proposed upstream</td></tr>
+<tr><td>linux-on-litex-vexriscv: SWD pads on Arty Pmod JB</td><td><a href="https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty">https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty</a></td><td>branch, waits for the LiteX part</td></tr>
+<tr><td>OpenOCD (Vexriscv fork)</td><td><a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">https://github.com/disdi/openocd/tree/vexriscv-gateway</a></td><td>branch; Gerrit <a href="https://review.openocd.org/c/openocd/+/9786">9786</a> + gateway backend</td></tr>
+</tbody>
+</table>
+</div>
 <p><strong>OpenOCD (host ONLY)</strong> — :</p>
 <div class="table-wrapper">
 <table>
@@ -1047,9 +1057,17 @@ bt
 </table>
 </div>
 <h3 id="jtag-on-arty--end-to-end-workflow"><a class="header" href="#jtag-on-arty--end-to-end-workflow">JTAG on Arty — end-to-end workflow</a></h3>
-<p>Official stack only (<code>--with-privileged-debug</code> only).</p>
-<p><code>--with-privileged-debug</code> alone is <strong>not enough</strong> on hardware. Without <code>--jtag-tap</code> the DTM is tunneled, and its <code>debugPort_*</code> signals need a vendor boundary-scan primitive which is added as a separate MR in linux-on-litex-vexriscv:
-<a href="https://github.com/litex-hub/linux-on-litex-vexriscv/pull/458">https://github.com/litex-hub/linux-on-litex-vexriscv/pull/458</a></p>
+<p>Official stack only (<code>--with-privileged-debug</code>).</p>
+<p><code>--with-privileged-debug</code> alone is <strong>not enough</strong> on hardware. Without <code>--jtag-tap</code> the DTM is
+tunneled, and its <code>debugPort_*</code> signals need a vendor boundary-scan primitive (<code>BSCANE2</code> on a
+Xilinx USER chain). That binding is now upstream as an explicit second flag,
+<strong><code>--with-cpu-jtag-debug</code></strong> — LiteX <a href="https://github.com/enjoy-digital/litex/pull/2572">#2572</a>
+(<code>LiteXSoC.add_cpu_jtag_debug()</code>, default USER4, IR <code>0x23</code>) and linux-on-litex-vexriscv
+<a href="https://github.com/litex-hub/linux-on-litex-vexriscv/pull/459">#459</a>. USER1 stays free for
+<code>jtagbone</code>. It replaces the original
+<a href="https://github.com/litex-hub/linux-on-litex-vexriscv/pull/458">#458</a>, which was closed unmerged;
+the hardware results below were taken with #458's <code>BSCANE2</code> instance, the same USER4 / IR <code>0x23</code>
+binding.</p>
 <p><strong>Prerequisites</strong></p>
 <ul>
 <li>Arty</li>
@@ -1069,9 +1087,10 @@ bt
 </table>
 </div>
 <p>Terminal 1 — Build and Flash on Arty</p>
-<pre><code class="language-bash"># Use MR https://github.com/litex-hub/linux-on-litex-vexriscv/pull/458
-./make.py --board=arty --cpu-count=1 --with-privileged-debug --build --load
+<pre><code class="language-bash"># Stock LiteX + linux-on-litex-vexriscv master (litex#2572 / linux-on-litex-vexriscv#459)
+./make.py --board=arty --cpu-count=1 --with-privileged-debug --with-cpu-jtag-debug --build --load
 </code></pre>
+<p>Expected in OpenOCD: <code>Examined RISC-V core; found 1 harts</code> and <code>XLEN=32, misa=0x40141101</code>.</p>
 <p>Terminal 2 — OpenOCD (after Terminal 1 is up)</p>
 <pre><code class="language-bash">openocd -f litex/litex/tools/debug/openocd_arty_official.cfg
 </code></pre>
@@ -1112,20 +1131,22 @@ One transport per bitstream — do not combine with <code>--jtag-tap</code>.</p>
 <tbody>
 <tr><td><strong>SWCLK</strong></td><td><code>pmodb:2</code></td><td><strong>JB3</strong></td><td><code>D15</code></td><td>Probe-driven, gated clock</td></tr>
 <tr><td><strong>SWDIO</strong></td><td><code>pmodb:4</code></td><td><strong>JB7</strong></td><td><code>J17</code></td><td>Bidirectional; FPGA <code>PULLUP TRUE</code> (ADI)</td></tr>
-<tr><td><strong>GND</strong></td><td>—</td><td>JB pin 5 or 11</td><td>—</td><td>Common ground (required)</td></tr>
-<tr><td><strong>3.3 V (VTref)</strong></td><td>—</td><td>JB pin 6 or 12</td><td>—</td><td>Optional; probe senses I/O voltage</td></tr>
+<tr><td><strong>GND</strong></td><td>—</td><td><strong>JB11</strong></td><td>—</td><td>Common ground (required)</td></tr>
+<tr><td><strong>GND (2nd)</strong></td><td>—</td><td><strong>JB5</strong></td><td>—</td><td><strong>Required</strong> — second ground return, see below</td></tr>
+<tr><td><strong>3.3 V (VTref)</strong></td><td>—</td><td><strong>JB12</strong></td><td>—</td><td><strong>Required for the MCU-Link</strong> — see below</td></tr>
 </tbody>
 </table>
 </div>
 <p>Looking into the 12-pin Pmod:</p>
-<pre><code class="language-text">JB1  JB2  JB3=SWCLK  JB4  GND  3V3
-JB7=SWDIO JB8  JB9   JB10 GND  3V3
+<pre><code class="language-text">JB1        JB2  JB3=SWCLK  JB4   JB5=GND(2nd)  JB6=3V3
+JB7=SWDIO  JB8  JB9        JB10  JB11=GND      JB12=3V3 (VTref)
 </code></pre>
 <p>MCU-Link 10-pin Cortex debug header → Arty:</p>
-<pre><code class="language-text">MCU-Link pin 4 (SWCLK)  → Arty JB3
-MCU-Link pin 2 (SWDIO)  → Arty JB7
-MCU-Link pin 3 or 5 (GND) → Arty JB GND
-MCU-Link pin 1 (VTref)  → Arty JB 3V3   (optional, recommended)
+<pre><code class="language-text">MCU-Link pin 4 (SWCLK)    → Arty JB3
+MCU-Link pin 2 (SWDIO)    → Arty JB7
+MCU-Link pin 3 (GND)      → Arty JB11
+MCU-Link pin 5 (GND)      → Arty JB5    (second ground, required)
+MCU-Link pin 1 (VTref)    → Arty JB12   (required on the MCU-Link)
 </code></pre>
 <p><strong>Configs</strong></p>
 <div class="table-wrapper">
@@ -1186,6 +1207,85 @@ continue
 bt
 </code></pre>
 <p>Expected: stop at <code>main</code> (typically around <code>0x4000069c</code>); <code>bt</code> shows <code>#0  main ()</code>.</p>
+<hr>
+<h2 id="vexiiriscv-over-swd"><a class="header" href="#vexiiriscv-over-swd">VexiiRiscv over SWD</a></h2>
+<p>The same SWD transport and <code>DebugModule</code> now also serve <strong>VexiiRiscv</strong>
+<a href="https://github.com/SpinalHDL/VexiiRiscv/pull/184">VexiiRiscv#184</a>. No new
+transport RTL was needed. VexiiRiscv builds its debug logic from SpinalHDL's
+<code>DebugModuleSocFiber</code>, and the SWD DTM is added in that fiber's body with
+<code>dm.withSwdTransport()</code>. <code>SwdPhy</code> / <code>SwdDp</code> / <code>SwdPhyDp</code> in the generated netlist are
+byte-identical to the VexRiscv SMP cluster's, so everything on the host side (probe, OpenOCD fork,
+configs) is reused unchanged.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>SoC</th><th>Option</th><th>Top-level ports</th></tr>
+</thead>
+<tbody>
+<tr><td>LiteX SoC (<code>vexiiriscv.soc.litex.SocGen</code>)</td><td><code>--with-swd</code></td><td><code>debug_swd_swd_swclk</code>, <code>debug_swd_swd_swdio_{read,write,writeEnable}</code></td></tr>
+<tr><td>MicroSoc (<code>vexiiriscv.soc.micro.MicroSocGen</code>)</td><td><code>--jtag-tap=false --swd=true</code></td><td><code>socCtrl_debugModule_swd_swd_*</code></td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>One DTM at a time (RISC-V Debug Spec Ch. 6): <code>--with-swd</code> together with <code>--with-jtag-tap</code> /
+<code>--with-jtag-instruction</code> is refused at elaboration.</li>
+<li>SWDIO is three wires (<code>read</code> / <code>write</code> / <code>writeEnable</code>); the tristate belongs to the integrator.</li>
+<li>A <code>--with-jtag-tap</code> netlist is unchanged by #184.</li>
+</ul>
+<p><strong>LiteX integration — pending.</strong> LiteX's <code>cpu/vexiiriscv</code> still pins a VexiiRiscv revision
+without SWD, and its <code>--with-swd-debug</code> option for VexiiRiscv (four ports, <code>add_swd()</code>, reset
+wiring) is not published yet; it will be proposed together with the pin bump.</p>
+<h3 id="hardware-results"><a class="header" href="#hardware-results">Hardware results</a></h3>
+<p>Same MCU-Link, wiring and OpenOCD fork as the VexRiscv lane above.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Configuration</th><th>Board</th><th>Build</th><th>Result</th></tr>
+</thead>
+<tbody>
+<tr><td>RV32 <code>linux</code> (RV32IMA + S/U), 1 hart</td><td>Arty A7-35T, 100 MHz</td><td>WNS 0.233 ns, 41.6 % LUT</td><td>DPIDR <code>0x0ba11aab</code>, AP_IDR <code>0x74726976</code>, <code>misa=0x40141101</code>; halt / step / resume; GDB <code>load</code> (67 KB/s), <code>break main</code> / <code>help</code>, <code>stepi</code>, <code>bt</code></td></tr>
+<tr><td>RV64 <code>debian</code> (RV64IMAFDC + S/U), 1 hart</td><td>Arty A7-35T, 100 MHz</td><td>WNS 0.131 ns, 75 % LUT / 86 % BRAM</td><td><code>XLEN=64</code>, <code>misa=0x800000000014112d</code>; halt / step / resume; GDB (<code>set arch riscv:rv64</code>): <code>load</code>, breakpoints, 64-bit register write / read-back, FPU registers (<code>fcsr</code>, <code>ft0</code>), <code>bt</code></td></tr>
+<tr><td>RV64 <code>debian</code>, <strong>2 harts</strong></td><td><strong>Arty A7-100T, 80 MHz</strong></td><td>WNS 0.532 ns, 44 % LUT</td><td>both harts on one DTM; <strong>independent</strong> halt / step / resume per hart; GDB sees one thread per hart</td></tr>
+</tbody>
+</table>
+</div>
+<p>Two harts of the RV64 variant do not fit the A7-35T (estimated ~128 % LUT, ~126 % BRAM), hence A7-100T at 80 MHz is used which meets timing.</p>
+<p>Log lines that are expected on VexiiRiscv:</p>
+<ul>
+<li><code>Found 0 triggers</code> — LiteX's default VexiiRiscv configuration has no hardware triggers (same
+over JTAG); software breakpoints in RAM work.</li>
+<li><code>Failed to read memory (addr=0x3ffffffc)</code> — GDB peeks at the word before <code>_start</code>, which is
+unmapped; the DM correctly reports the bus error.</li>
+<li><code>Core N could not be made part of halt group 1</code> (two harts) — this DM implements no halt
+groups, which the spec allows; OpenOCD halts the harts one after the other.</li>
+</ul>
+<h3 id="two-harts-openocd-configuration"><a class="header" href="#two-harts-openocd-configuration">Two harts: OpenOCD configuration</a></h3>
+<p>One <code>riscv</code> target per hart, all on the <strong>same</strong> DTM (DMI is shared by every hart behind the DM;
+the hart is chosen by <code>-coreid</code>, i.e. <code>hartsel</code>). Source it in place of
+<code>vexriscv_swd_riscv_master.cfg</code>, after <code>openocd_arty_swd.cfg</code> and <code>vexriscv_swd.cfg</code>.</p>
+<p>For GDB, one thread per hart:</p>
+<pre><code class="language-tcl">dtm create vexriscv.dtm -type vexriscv-gateway -dap vexriscv.dap -ap-num 0
+
+target create vexriscv.rv0 riscv -dtm vexriscv.dtm -coreid 0 -rtos hwthread
+target create vexriscv.rv1 riscv -dtm vexriscv.dtm -coreid 1 -rtos hwthread
+target smp vexriscv.rv0 vexriscv.rv1
+
+riscv set_command_timeout_sec 120
+vexriscv.rv0 configure -event gdb-attach halt
+</code></pre>
+<pre><code class="language-gdb">set arch riscv:rv64
+target extended-remote localhost:3333
+info threads
+#  * 1  Thread 1 "vexriscv.rv0" ...
+#    2  Thread 2 "vexriscv.rv1" ... 0x00000000000000a4 in ?? ()
+thread 2
+p/x $mhartid        # 0x1
+</code></pre>
+<p>For independent per-hart control, drop <code>-rtos hwthread</code> and <code>target smp</code>, then select a hart with
+<code>targets vexriscv.rv0</code> / <code>targets vexriscv.rv1</code>. Halting hart 1 leaves hart 0 running
+(<code>vexriscv.rv0 curstate</code> → <code>running</code>, <code>vexriscv.rv1 curstate</code> → <code>halted</code>), and each hart steps and
+resumes on its own.</p>
 <hr><div style="break-before: page; page-break-before: always;"></div>
 <h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
 <h3 id="phase-4-verification-and-testing"><a class="header" href="#phase-4-verification-and-testing">Phase 4: Verification and Testing</a></h3>
