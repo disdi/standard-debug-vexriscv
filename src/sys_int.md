@@ -524,7 +524,8 @@ transport RTL was needed. VexiiRiscv builds its debug logic from SpinalHDL's
 `DebugModuleSocFiber`, and the SWD DTM is added in that fiber's body with
 `dm.withSwdTransport()`. `SwdPhy` / `SwdDp` / `SwdPhyDp` in the generated netlist are
 byte-identical to the VexRiscv SMP cluster's, so everything on the host side (probe, OpenOCD fork,
-configs) is reused unchanged.
+configs) is reused unchanged. The SWD transport is the same SpinalHDL code in both CPUs, and the generated Verilog confirms it.
+
 
 | SoC | Option | Top-level ports |
 | --- | --- | --- |
@@ -594,5 +595,113 @@ For independent per-hart control, drop `-rtos hwthread` and `target smp`, then s
 `targets vexriscv.rv0` / `targets vexriscv.rv1`. Halting hart 1 leaves hart 0 running
 (`vexriscv.rv0 curstate` → `running`, `vexriscv.rv1 curstate` → `halted`), and each hart steps and
 resumes on its own.
+
+---
+
+### DMI gateway vs Mem-AP (the RP2350 approach)
+
+The closest production precedent is the Raspberry Pi **RP2350**: SWD pins, an ARM SW-DP, and a
+RISC-V Debug Module behind it
+([RP2350 datasheet](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf) §3.5, §3.8).
+Both designs are the same up to one layer. They differ only in the **access port** between the DP
+and the DM:
+
+| | RP2350 | This design (VexRiscv / VexiiRiscv) |
+| --- | --- | --- |
+| AP type | standard CoreSight **APB Mem-AP**, at `0x0a000` in the debug address space | custom 4-register **designer AP** — `AP_IDR` / `DMI_ADDR` / `DMI_DATA` / `POSTED_READ` ([Phase 2C](./Phase2C.md)) |
+| Reaching DM register `n` | memory-mapped at `n × 4`: write the address to `TAR`, then access `DRW` (or `BD0`–`BD3`) | write `n` to `DMI_ADDR`, then read / write `DMI_DATA` |
+| SWD packets per DM access | 1–4, depending on the access pattern | 1–2, depending on the access pattern |
+| DP architecture | ADIv6 (`SELECT` holds the AP base address) | ADIv5 (`APSEL` field) |
+| DP state at power-up | Dormant (needs the selection-alert wake-up sequence) | active |
+| Standing in the RISC-V Debug Spec | **custom DTM** (Ch. 6) | **custom DTM** (Ch. 6) — the same |
+
+**Why this design keeps the gateway.** What a Mem-AP would buy is abillity to speak Mem-AP lingo from ARM world which on the wire it is not cheap.
+
+#### Speed
+
+Both designs are an **address register plus a data register** — `TAR` + `DRW` on a Mem-AP, `DMI_ADDR` + `DMI_DATA` on the gateway However, the real difference is the Mem-AP's **banked window**. Host side tooling like OpenOCD's Mem-AP layer  reads through `BD0`–`BD3`: `TAR` is set to a 16-byte-aligned address, and the four words of that window are then reached without touching `TAR` again. But `BD0`–`BD3` sit in a different AP register bank from `TAR`, so moving to a new window costs a DP `SELECT` write, the `TAR` write, and a `SELECT` write back. 
+
+The gateway keeps all its registers in bank 0 and never writes `SELECT`.
+
+This is explained below for SWD packets per DM access for both the two backends:
+
+| Access | Gateway | Mem-AP (`BD` path) |
+| --- | --- | --- |
+| Same register as the previous access | 1 | 1 |
+| Another register in the same 4-register window | 2 | **1** |
+| Register in a different window | **2** | 4 (`SELECT` + `TAR` + `SELECT` + `BD`) |
+| End of a batch that read something | + 1 (`RDBUFF`) | + 1 (`RDBUFF`) |
+
+Also RISC-V DM's registers cluster in those windows — `dmcontrol` / `dmstatus`, `abstractcs` /
+`command`, and `data0`–`data3` each share one — so for real operations:
+
+| Operation | Gateway | Mem-AP |
+| --- | --- | --- |
+| Halt: write `dmcontrol`, poll `dmstatus` N times | 2 + 2 + (N − 1) | 4 + N |
+| Read a GPR, RV32: write `command`, poll `abstractcs`, read `data0` | 7 | 10 |
+| Read a GPR, RV64: also read `data1` | 9 | 11 |
+| Poll the same register | 1 each | 1 each |
+
+So on the wire. the gateway is a few packets ahead.
+
+#### Area
+
+In **area** the gateway is clearly smaller. Its AP is a 7-bit address register plus one
+DebugBus request path; the whole SWD DTM (PHY, DP, gateway, clock crossing) is 216 LUTs on an
+Artix-7. The SWD DTM breaks down as:
+
+| Part of `DebugTransportModuleSwd` | LUTs | FFs | Also needed with a Mem-AP? |
+| --- | --- | --- | --- |
+| `SwdPhy` — wire protocol | 95 | 130 | yes, same DP |
+| `SwdDp` — DP registers | 25 | 50 | yes |
+| Response clock crossing (`FlowCCByToggle`) | 34 | 70 | yes — any AP needs a crossing to the DM (Hazard3 uses an async APB bridge) |
+| **Gateway AP + command clock crossing** | **60** | **115** | **no — this is the part a Mem-AP would replace** |
+| Total | 216 | 409 | |
+
+So the gateway costs at most 60 LUTs / 115 FFs, and part of that is the command-side clock crossing
+a Mem-AP would need too. A Mem-AP in its place needs at least a 32-bit `TAR`, a `CSW` register
+(access size, auto-increment, protection), the banked `BD` decode, an address incrementer and an
+APB manager — roughly 100–150 LUTs by estimate (not synthesised).
+
+#### Context - Mixed Architecture vs Pure RISC-V
+
+RP2350 is a dual-architecture part: each core
+slot holds an Arm Cortex-M33 and a Hazard3, selected at boot. Its debug complex is Arm CoreSight
+around **one** SW-DP, with two AHB5 Mem-APs (debug address space `0x02000` / `0x04000`) for the two
+Cortex-M33s, the APB Mem-AP at `0x0a000` for the RISC-V DM, and RP-AP for chip-level control
+([datasheet](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf) §3.5.2–3.5.3, Figure
+6). The SW-DP and the Mem-AP infrastructure are there for the Arm cores anyway. And the Hazard3 DM
+already exposes a byte-addressed APB port, as shown above. Connecting it through one more APB
+Mem-AP therefore costs almost nothing extra, needs no new transport RTL, and makes the RISC-V
+cores reachable through the same port, the same way, as the Arm ones.
+
+This design starts from the opposite position: there is no Arm debug IP to reuse. The SW-DP is
+written from scratch in SpinalHDL, and the SpinalHDL DM exposes a word-addressed `DebugBus(7)`, not
+APB. Building a Mem-AP would add a CoreSight-shaped register set and an APB manager only to reach a
+DM that doesn't speak APB; the gateway reaches `DebugBus` directly. The one thing the Mem-AP shape
+would buy is support in tools that only speak Mem-AP — and that is a host-side problem, solved here
+by the `vexriscv-gateway` OpenOCD backend without touching the RTL.
+
+| | Mem-AP fits when | Gateway fits when |
+| --- | --- | --- |
+| Debug IP already on chip | an Arm CoreSight DAP is present (e.g. for Arm cores on the same die) | the DP is your own RTL |
+| DM port | APB, byte-addressed (Hazard3) | word-addressed bus (`DebugBus`) |
+| Host tooling | must work with tools that only drive Mem-APs | you control the host side (OpenOCD backend) |
+| Area | the AP is already paid for | the smallest AP that does the job |
+
+#### RISC-V-only chips: why the gateway is usually the better choice
+
+Take the Arm cores away and RP2350's main reason for a Mem-AP disappears: there is no CoreSight
+debug IP on the die to reuse. For a SoC or MCU whose only processors are RISC-V, the gateway is
+usually the better fit:
+
+- **No CoreSight IP to reuse.** The SW-DP has to be built anyway (here it is SpinalHDL). A Mem-AP
+  on top of it adds `TAR`, `CSW`, the banked `BD` decode and an APB manager, with no functional
+  gain: the DM is the only thing behind the AP.
+- **The DM has a simple word-addressed port.** SpinalHDL's `DebugModule` speaks `DebugBus(7)`;
+  the gateway connects to it directly, whereas a Mem-AP would first need an APB front end on the
+  DM.
+- **It is the smaller AP,** and on the wire it is even or slightly ahead (see the tables above) —
+  by tens of LUTs and a few packets per operation, so a tie-breaker rather than the main reason.
 
 ---
