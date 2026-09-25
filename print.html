@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-20fd0ce5.js";
+            window.path_to_searchindex_js = "searchindex-96836cdd.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -765,6 +765,7 @@ RTL (<code>SwdPhy</code> / <code>SwdDp</code> / <code>SwdDmiGateway</code>) is P
 <tr><td>LiteX: <code>swdremote</code> sim module, OpenOCD configs, <code>--with-swd-debug</code> for <code>vexriscv_smp</code></td><td><a href="https://github.com/disdi/litex/tree/swd">https://github.com/disdi/litex/tree/swd</a></td><td>branch, not yet proposed upstream</td></tr>
 <tr><td>linux-on-litex-vexriscv: SWD pads on Arty Pmod JB</td><td><a href="https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty">https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty</a></td><td>branch, waits for the LiteX part</td></tr>
 <tr><td>OpenOCD (Vexriscv fork)</td><td><a href="https://github.com/disdi/openocd/tree/vexriscv-gateway">https://github.com/disdi/openocd/tree/vexriscv-gateway</a></td><td>branch; Gerrit <a href="https://review.openocd.org/c/openocd/+/9786">9786</a> + gateway backend</td></tr>
+<tr><td>Black Magic Debug: DMI gateway AP support (no OpenOCD)</td><td>blackmagic <a href="https://codeberg.org/blackmagic-debug/blackmagic/pulls/2322">#2322</a> — <code>disdi:feature/riscv-swd-dmi-gateway</code></td><td>open, submitted 2026-09-25 — see <a href="#black-magic-probe-no-openocd">Black Magic Probe</a></td></tr>
 </tbody>
 </table>
 </div>
@@ -1407,7 +1408,53 @@ DM.</li>
 <li><strong>It is the smaller AP,</strong> and on the wire it is even or slightly ahead (see the tables above) —
 by tens of LUTs and a few packets per operation, so a tie-breaker rather than the main reason.</li>
 </ul>
-<hr><div style="break-before: page; page-break-before: always;"></div>
+<hr>
+<h2 id="black-magic-probe-openocd-alternative"><a class="header" href="#black-magic-probe-openocd-alternative">Black Magic Probe (OpenOCD alternative)</a></h2>
+<p>A <a href="https://black-magic.org/">Black Magic Probe</a> (BMP) runs the GDB server <strong>on the probe</strong>: GDB
+connects straight to its USB serial port, with no OpenOCD in between. Stock BMP firmware reads
+this design's SW-DP but cannot use the DMI gateway AP. Support is proposed in
+<strong>blackmagic <a href="https://codeberg.org/blackmagic-debug/blackmagic/pulls/2322">#2322</a></strong>
+(<code>riscv_adi_dtm: support the SpinalHDL SWD "DMI gateway" AP</code>; branch
+<code>disdi:feature/riscv-swd-dmi-gateway</code>). No RTL change was needed.</p>
+<h3 id="wiring-bmp-v23-same-arty-pmod-jb-harness"><a class="header" href="#wiring-bmp-v23-same-arty-pmod-jb-harness">Wiring (BMP v2.3, same Arty Pmod JB harness)</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>BMP 10-pin</th><th>Signal</th><th>Arty</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>VTref (sets the probe's I/O level)</td><td>JB12 (3.3 V)</td></tr>
+<tr><td>2</td><td>SWDIO</td><td>JB7</td></tr>
+<tr><td>4</td><td>SWCLK</td><td>JB3</td></tr>
+<tr><td>3 / 5 / 9</td><td>GND</td><td>JB11, plus the second ground JP2.3 → JB5</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="hardware-results-1"><a class="header" href="#hardware-results-1">Hardware results</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Board / image</th><th>Result</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Arty A7-35T</strong>, VexRiscv SMP (RV32IMA), golden image</td><td><code>rv32ima (exts 00141101)</code>. <code>load demo.elf</code> (6552 B), <code>break main</code> <code>0x4000069c</code>, <code>stepi</code> → <code>0x400006b0</code>, <code>break help</code> <code>0x40000644</code>, <code>bt</code> <code>#0 help</code> / <code>#1 0x400006cc main</code> — <strong>identical to the OpenOCD + MCU-Link lane</strong>; <code>compare-sections</code> matches</td></tr>
+<tr><td><strong>Arty A7-100T</strong>, VexiiRiscv RV64 × 2 harts</td><td>DM v0.13, <strong>both harts</strong> found as two targets; attach, registers, single step, resume/halt per hart</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="use"><a class="header" href="#use">Use</a></h3>
+<pre><code class="language-sh"># Probe firmware (BMP v2.x), from the blackmagic tree with #2322  :
+meson setup build-fw --cross-file cross-file/bmp-v1-v2-riscv.ini &amp;&amp; ninja -C build-fw
+dfu-util -d 1d50:6018,:6017 -s 0x08002000:leave -D build-fw/blackmagic_bmp_v1_v2_firmware.bin
+
+# GDB, straight to the probe (no OpenOCD):
+riscv64-unknown-elf-gdb -ex 'set arch riscv:rv32' -ex 'set mem inaccessible-by-default off' \
+  -ex 'target extended-remote /dev/ttyACM0' -ex 'monitor swdp_scan' -ex 'attach 1' demo/demo.elf
+(gdb) load
+(gdb) break main
+(gdb) continue
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
 <h3 id="phase-4-verification-and-testing"><a class="header" href="#phase-4-verification-and-testing">Phase 4: Verification and Testing</a></h3>
 <p>Host-visible <strong>sim</strong> paths that already pass are tracked under <a href="#system-integration--swd">Phase 3</a>
