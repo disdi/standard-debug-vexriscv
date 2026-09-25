@@ -18,6 +18,7 @@ RTL (`SwdPhy` / `SwdDp` / `SwdDmiGateway`) is Phase **2A–2C** and is not re-de
 | LiteX: `swdremote` sim module, OpenOCD configs, `--with-swd-debug` for `vexriscv_smp` | <https://github.com/disdi/litex/tree/swd> | branch, not yet proposed upstream |
 | linux-on-litex-vexriscv: SWD pads on Arty Pmod JB | <https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty> | branch, waits for the LiteX part |
 | OpenOCD (Vexriscv fork) | <https://github.com/disdi/openocd/tree/vexriscv-gateway> | branch; Gerrit [9786](https://review.openocd.org/c/openocd/+/9786) + gateway backend |
+| Black Magic Debug: DMI gateway AP support (no OpenOCD) | blackmagic [#2322](https://codeberg.org/blackmagic-debug/blackmagic/pulls/2322) — `disdi:feature/riscv-swd-dmi-gateway` | open, submitted 2026-09-25 — see [Black Magic Probe](#black-magic-probe-no-openocd) |
 
 
 **OpenOCD (host ONLY)** — :
@@ -705,3 +706,44 @@ usually the better fit:
   by tens of LUTs and a few packets per operation, so a tie-breaker rather than the main reason.
 
 ---
+
+## Black Magic Probe (OpenOCD alternative)
+
+A [Black Magic Probe](https://black-magic.org/) (BMP) runs the GDB server **on the probe**: GDB
+connects straight to its USB serial port, with no OpenOCD in between. Stock BMP firmware reads
+this design's SW-DP but cannot use the DMI gateway AP. Support is proposed in
+**blackmagic [#2322](https://codeberg.org/blackmagic-debug/blackmagic/pulls/2322)**
+(`riscv_adi_dtm: support the SpinalHDL SWD "DMI gateway" AP`; branch
+`disdi:feature/riscv-swd-dmi-gateway`). No RTL change was needed.
+
+### Wiring (BMP v2.3, same Arty Pmod JB harness)
+
+| BMP 10-pin | Signal | Arty |
+| --- | --- | --- |
+| 1 | VTref (sets the probe's I/O level) | JB12 (3.3 V) |
+| 2 | SWDIO | JB7 |
+| 4 | SWCLK | JB3 |
+| 3 / 5 / 9 | GND | JB11, plus the second ground JP2.3 → JB5 |
+
+### Hardware results
+
+| Board / image | Result |
+| --- | --- |
+| **Arty A7-35T**, VexRiscv SMP (RV32IMA), golden image | `rv32ima (exts 00141101)`. `load demo.elf` (6552 B), `break main` `0x4000069c`, `stepi` → `0x400006b0`, `break help` `0x40000644`, `bt` `#0 help` / `#1 0x400006cc main` — **identical to the OpenOCD + MCU-Link lane**; `compare-sections` matches |
+| **Arty A7-100T**, VexiiRiscv RV64 × 2 harts | DM v0.13, **both harts** found as two targets; attach, registers, single step, resume/halt per hart |
+
+
+### Use
+
+```sh
+# Probe firmware (BMP v2.x), from the blackmagic tree with #2322  :
+meson setup build-fw --cross-file cross-file/bmp-v1-v2-riscv.ini && ninja -C build-fw
+dfu-util -d 1d50:6018,:6017 -s 0x08002000:leave -D build-fw/blackmagic_bmp_v1_v2_firmware.bin
+
+# GDB, straight to the probe (no OpenOCD):
+riscv64-unknown-elf-gdb -ex 'set arch riscv:rv32' -ex 'set mem inaccessible-by-default off' \
+  -ex 'target extended-remote /dev/ttyACM0' -ex 'monitor swdp_scan' -ex 'attach 1' demo/demo.elf
+(gdb) load
+(gdb) break main
+(gdb) continue
+```
