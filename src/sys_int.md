@@ -14,8 +14,9 @@ RTL (`SwdPhy` / `SwdDp` / `SwdDmiGateway`) is Phase **2A–2C** and is not re-de
 | `spinal.lib.com.swd` split (`Swd` / `SwdPhy` / `SwdDp`) | SpinalHDL [#1966](https://github.com/SpinalHDL/SpinalHDL/pull/1966) | merged 2026-09-19 |
 | VexRiscv SMP cluster `--swd` | VexRiscv [#483](https://github.com/SpinalHDL/VexRiscv/pull/483), [#499](https://github.com/SpinalHDL/VexRiscv/pull/499) | merged 2026-09-08 / 09-19 |
 | **VexiiRiscv** LiteX SoC `--with-swd` + MicroSoc `--swd` | VexiiRiscv [#184](https://github.com/SpinalHDL/VexiiRiscv/pull/184) | merged 2026-09-23 |
-| VexiiRiscv CPU-embedded debug plugin (`EmbeddedRiscvJtag`) over SWD, `--debug-swd` | VexiiRiscv [#188](https://github.com/SpinalHDL/VexiiRiscv/pull/188) | open, submitted 2026-09-27 |
-| VexRiscv CPU-embedded debug plugin (`EmbeddedRiscvJtag`) over SWD | VexRiscv [#500](https://github.com/SpinalHDL/VexRiscv/pull/500) | open, submitted 2026-09-27 |
+| VexiiRiscv CPU-embedded debug plugin (`EmbeddedRiscvJtag`) over SWD, `--debug-swd` | VexiiRiscv [#188](https://github.com/SpinalHDL/VexiiRiscv/pull/188) | merged 2026-09-28 (`19b41a7`) |
+| VexRiscv CPU-embedded debug plugin (`EmbeddedRiscvJtag`) over SWD | VexRiscv [#500](https://github.com/SpinalHDL/VexRiscv/pull/500) | merged 2026-09-27 (`aefc0e0`) |
+| **ElemRV / nafarr:** `DebugTransport` (`Jtag` default / `Swd`) on the VexiiRiscv `realtime` and `performance` presets | elements-nafarr [#72](https://github.com/aesc-silicon/elements-nafarr/pull/72) | merged 2026-09-29 (`54406843`). VexiiRiscv pin `19b41a7` is [#74](https://github.com/aesc-silicon/elements-nafarr/pull/74) (`b7a1257`) |
 | JTAG on Xilinx USER chains (`add_cpu_jtag_debug`, `--with-cpu-jtag-debug`) | LiteX [#2572](https://github.com/enjoy-digital/litex/pull/2572) + linux-on-litex-vexriscv [#459](https://github.com/litex-hub/linux-on-litex-vexriscv/pull/459) | merged 2026-09-10 |
 | LiteX: `swdremote` sim module, OpenOCD configs, `--with-swd-debug` for `vexriscv_smp` | <https://github.com/disdi/litex/tree/swd> | branch, not yet proposed upstream |
 | linux-on-litex-vexriscv: SWD pads on Arty Pmod JB | <https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty> | branch, waits for the LiteX part |
@@ -714,18 +715,21 @@ usually the better fit:
 Both CPUs also have a plugin, `EmbeddedRiscvJtag`, that builds the Debug Module and its transport
 **inside a single-hart CPU**. It is meant for small SoCs that instantiate the CPU directly. Examples are
 VexiiRiscv's standalone `Generate` (`--debug-jtag-*`), VexRiscv's `GenFullWithOfficialRiscvDebug` and
-`Briey`, and third-party SoCs such as aesc-silicon's nafarr / ElemRV. It offered only JTAG transports,
-because the SWD work above went into the SMP cluster (VexRiscv) and the SoC-level debug fiber
-(VexiiRiscv). Two open PRs add an SWD mode that reuses the same `DebugTransportModuleSwd`:
+`Briey`, and third-party SoCs such as aesc-silicon's nafarr / ElemRV. The plugin's SWD mode reuses
+the same `DebugTransportModuleSwd` as the SMP cluster and the SoC-level debug fiber:
 
 | PR | Option | Hardware check |
 | --- | --- | --- |
-| VexiiRiscv [#188](https://github.com/SpinalHDL/VexiiRiscv/pull/188) | `withSwd` on the plugin, `--debug-swd` | Arty A7-100T, RV32, Black Magic Probe: load, software and single-step lane identical to the MCU-Link values |
-| VexRiscv [#500](https://github.com/SpinalHDL/VexRiscv/pull/500) | `withSwd` on the plugin | Arty A7-35T, LiteX "standard" core + official debug: MCU-Link (65 KB/s load, software + hardware breakpoints, `ndmreset`) and Black Magic Probe, identical results |
+| VexiiRiscv [#188](https://github.com/SpinalHDL/VexiiRiscv/pull/188) — merged 2026-09-28 (`19b41a7`) | `withSwd` on the plugin, `--debug-swd` | Arty A7-100T, RV32, Black Magic Probe: load, software and single-step lane identical to the MCU-Link values |
+| VexRiscv [#500](https://github.com/SpinalHDL/VexRiscv/pull/500) — merged 2026-09-27 (`aefc0e0`) | `withSwd` on the plugin | Arty A7-35T, LiteX "standard" core + official debug: MCU-Link (65 KB/s load, software + hardware breakpoints, `ndmreset`) and Black Magic Probe, identical results |
 
-In both PRs the existing JTAG configurations generate netlists identical to `dev`, and the SWD blocks are
+On both merges the existing JTAG configurations generate netlists identical to `dev`, and the SWD blocks are
 byte-identical to the SMP cluster's. The host side (probe, OpenOCD fork, configs) is unchanged. The plugin
 supports one hart; multi-hart designs use the SoC-level paths above.
+
+### ElemRV
+
+[elements-nafarr#72](https://github.com/aesc-silicon/elements-nafarr/pull/72)  adds SWD debug transport to ElemRV using EmbeddedRiscvJtag.
 
 ---
 
