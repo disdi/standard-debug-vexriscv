@@ -13,10 +13,11 @@ RTL (`SwdPhy` / `SwdDp` / `SwdDmiGateway`) is Phase **2A–2C** and is not re-de
 | SWD DTM (`DebugTransportModuleSwd`) + `DebugModuleFiber.withSwdTransport()` | SpinalHDL [#1956](https://github.com/SpinalHDL/SpinalHDL/pull/1956) | merged 2026-09-08 |
 | `spinal.lib.com.swd` split (`Swd` / `SwdPhy` / `SwdDp`) | SpinalHDL [#1966](https://github.com/SpinalHDL/SpinalHDL/pull/1966) | merged 2026-09-19 |
 | VexRiscv SMP cluster `--swd` | VexRiscv [#483](https://github.com/SpinalHDL/VexRiscv/pull/483), [#499](https://github.com/SpinalHDL/VexRiscv/pull/499) | merged 2026-09-08 / 09-19 |
-| **VexiiRiscv** LiteX SoC `--with-swd` + MicroSoc `--swd` | VexiiRiscv [#184](https://github.com/SpinalHDL/VexiiRiscv/pull/184) | merged 2026-09-23 |
+| VexiiRiscv LiteX SoC `--with-swd` + MicroSoc `--swd` | VexiiRiscv [#184](https://github.com/SpinalHDL/VexiiRiscv/pull/184) | merged 2026-09-23 |
 | VexiiRiscv CPU-embedded debug plugin (`EmbeddedRiscvJtag`) over SWD, `--debug-swd` | VexiiRiscv [#188](https://github.com/SpinalHDL/VexiiRiscv/pull/188) | merged 2026-09-28 (`19b41a7`) |
 | VexRiscv CPU-embedded debug plugin (`EmbeddedRiscvJtag`) over SWD | VexRiscv [#500](https://github.com/SpinalHDL/VexRiscv/pull/500) | merged 2026-09-27 (`aefc0e0`) |
-| **ElemRV / nafarr:** `DebugTransport` (`Jtag` default / `Swd`) on the VexiiRiscv `realtime` and `performance` presets | elements-nafarr [#72](https://github.com/aesc-silicon/elements-nafarr/pull/72) | merged 2026-09-29 (`54406843`). VexiiRiscv pin `19b41a7` is [#74](https://github.com/aesc-silicon/elements-nafarr/pull/74) (`b7a1257`) |
+| ElemRV / nafarr: `DebugTransport` (`Jtag` default / `Swd`) on the VexiiRiscv `realtime` and `performance` presets | elements-nafarr [#72](https://github.com/aesc-silicon/elements-nafarr/pull/72) | merged 2026-09-29 (`54406843`). VexiiRiscv pin `19b41a7` is [#74](https://github.com/aesc-silicon/elements-nafarr/pull/74) (`b7a1257`) |
+| ElemRV / zibal: `debugTransport` on the Hydrogen / Carbon / Nitrogen platforms → `io_plat.jtag` or `io_plat.swd` | elements-zibal [#62](https://github.com/aesc-silicon/elements-zibal/pull/62) | open, submitted 2026-09-29 (`d78489b` on `main` `8f5e3f5`, which already pins nafarr `54406843`) |
 | JTAG on Xilinx USER chains (`add_cpu_jtag_debug`, `--with-cpu-jtag-debug`) | LiteX [#2572](https://github.com/enjoy-digital/litex/pull/2572) + linux-on-litex-vexriscv [#459](https://github.com/litex-hub/linux-on-litex-vexriscv/pull/459) | merged 2026-09-10 |
 | LiteX: `swdremote` sim module, OpenOCD configs, `--with-swd-debug` for `vexriscv_smp` | <https://github.com/disdi/litex/tree/swd> | branch, not yet proposed upstream |
 | linux-on-litex-vexriscv: SWD pads on Arty Pmod JB | <https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty> | branch, waits for the LiteX part |
@@ -730,6 +731,8 @@ supports one hart; multi-hart designs use the SoC-level paths above.
 ### ElemRV
 
 [elements-nafarr#72](https://github.com/aesc-silicon/elements-nafarr/pull/72)  adds SWD debug transport to ElemRV using EmbeddedRiscvJtag.
+
+[elements-zibal#62](https://github.com/aesc-silicon/elements-zibal/pull/62) passes it through the zibal platforms: a board sets `debugTransport = DebugTransport.Swd` in `Hydrogen.Parameter` (or Carbon / Nitrogen) and wires two pads, `swclk` and `swdio`, instead of four JTAG pads.
 
 ---
 
