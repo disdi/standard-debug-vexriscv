@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-86c71620.js";
+            window.path_to_searchindex_js = "searchindex-e95d56b0.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -761,8 +761,9 @@ RTL (<code>SwdPhy</code> / <code>SwdDp</code> / <code>SwdDmiGateway</code>) is P
 <tr><td><code>spinal.lib.com.swd</code> split (<code>Swd</code> / <code>SwdPhy</code> / <code>SwdDp</code>)</td><td>SpinalHDL <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1966">#1966</a></td><td>merged 2026-09-19</td></tr>
 <tr><td>VexRiscv SMP cluster <code>--swd</code></td><td>VexRiscv <a href="https://github.com/SpinalHDL/VexRiscv/pull/483">#483</a>, <a href="https://github.com/SpinalHDL/VexRiscv/pull/499">#499</a></td><td>merged 2026-09-08 / 09-19</td></tr>
 <tr><td><strong>VexiiRiscv</strong> LiteX SoC <code>--with-swd</code> + MicroSoc <code>--swd</code></td><td>VexiiRiscv <a href="https://github.com/SpinalHDL/VexiiRiscv/pull/184">#184</a></td><td>merged 2026-09-23</td></tr>
-<tr><td>VexiiRiscv CPU-embedded debug plugin (<code>EmbeddedRiscvJtag</code>) over SWD, <code>--debug-swd</code></td><td>VexiiRiscv <a href="https://github.com/SpinalHDL/VexiiRiscv/pull/188">#188</a></td><td>open, submitted 2026-09-27</td></tr>
-<tr><td>VexRiscv CPU-embedded debug plugin (<code>EmbeddedRiscvJtag</code>) over SWD</td><td>VexRiscv <a href="https://github.com/SpinalHDL/VexRiscv/pull/500">#500</a></td><td>open, submitted 2026-09-27</td></tr>
+<tr><td>VexiiRiscv CPU-embedded debug plugin (<code>EmbeddedRiscvJtag</code>) over SWD, <code>--debug-swd</code></td><td>VexiiRiscv <a href="https://github.com/SpinalHDL/VexiiRiscv/pull/188">#188</a></td><td>merged 2026-09-28 (<code>19b41a7</code>)</td></tr>
+<tr><td>VexRiscv CPU-embedded debug plugin (<code>EmbeddedRiscvJtag</code>) over SWD</td><td>VexRiscv <a href="https://github.com/SpinalHDL/VexRiscv/pull/500">#500</a></td><td>merged 2026-09-27 (<code>aefc0e0</code>)</td></tr>
+<tr><td><strong>ElemRV / nafarr:</strong> <code>DebugTransport</code> (<code>Jtag</code> default / <code>Swd</code>) on the VexiiRiscv <code>realtime</code> and <code>performance</code> presets</td><td>elements-nafarr <a href="https://github.com/aesc-silicon/elements-nafarr/pull/72">#72</a></td><td>merged 2026-09-29 (<code>54406843</code>). VexiiRiscv pin <code>19b41a7</code> is <a href="https://github.com/aesc-silicon/elements-nafarr/pull/74">#74</a> (<code>b7a1257</code>)</td></tr>
 <tr><td>JTAG on Xilinx USER chains (<code>add_cpu_jtag_debug</code>, <code>--with-cpu-jtag-debug</code>)</td><td>LiteX <a href="https://github.com/enjoy-digital/litex/pull/2572">#2572</a> + linux-on-litex-vexriscv <a href="https://github.com/litex-hub/linux-on-litex-vexriscv/pull/459">#459</a></td><td>merged 2026-09-10</td></tr>
 <tr><td>LiteX: <code>swdremote</code> sim module, OpenOCD configs, <code>--with-swd-debug</code> for <code>vexriscv_smp</code></td><td><a href="https://github.com/disdi/litex/tree/swd">https://github.com/disdi/litex/tree/swd</a></td><td>branch, not yet proposed upstream</td></tr>
 <tr><td>linux-on-litex-vexriscv: SWD pads on Arty Pmod JB</td><td><a href="https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty">https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty</a></td><td>branch, waits for the LiteX part</td></tr>
@@ -1415,23 +1416,24 @@ by tens of LUTs and a few packets per operation, so a tie-breaker rather than th
 <p>Both CPUs also have a plugin, <code>EmbeddedRiscvJtag</code>, that builds the Debug Module and its transport
 <strong>inside a single-hart CPU</strong>. It is meant for small SoCs that instantiate the CPU directly. Examples are
 VexiiRiscv's standalone <code>Generate</code> (<code>--debug-jtag-*</code>), VexRiscv's <code>GenFullWithOfficialRiscvDebug</code> and
-<code>Briey</code>, and third-party SoCs such as aesc-silicon's nafarr / ElemRV. It offered only JTAG transports,
-because the SWD work above went into the SMP cluster (VexRiscv) and the SoC-level debug fiber
-(VexiiRiscv). Two open PRs add an SWD mode that reuses the same <code>DebugTransportModuleSwd</code>:</p>
+<code>Briey</code>, and third-party SoCs such as aesc-silicon's nafarr / ElemRV. The plugin's SWD mode reuses
+the same <code>DebugTransportModuleSwd</code> as the SMP cluster and the SoC-level debug fiber:</p>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>PR</th><th>Option</th><th>Hardware check</th></tr>
 </thead>
 <tbody>
-<tr><td>VexiiRiscv <a href="https://github.com/SpinalHDL/VexiiRiscv/pull/188">#188</a></td><td><code>withSwd</code> on the plugin, <code>--debug-swd</code></td><td>Arty A7-100T, RV32, Black Magic Probe: load, software and single-step lane identical to the MCU-Link values</td></tr>
-<tr><td>VexRiscv <a href="https://github.com/SpinalHDL/VexRiscv/pull/500">#500</a></td><td><code>withSwd</code> on the plugin</td><td>Arty A7-35T, LiteX "standard" core + official debug: MCU-Link (65 KB/s load, software + hardware breakpoints, <code>ndmreset</code>) and Black Magic Probe, identical results</td></tr>
+<tr><td>VexiiRiscv <a href="https://github.com/SpinalHDL/VexiiRiscv/pull/188">#188</a> — merged 2026-09-28 (<code>19b41a7</code>)</td><td><code>withSwd</code> on the plugin, <code>--debug-swd</code></td><td>Arty A7-100T, RV32, Black Magic Probe: load, software and single-step lane identical to the MCU-Link values</td></tr>
+<tr><td>VexRiscv <a href="https://github.com/SpinalHDL/VexRiscv/pull/500">#500</a> — merged 2026-09-27 (<code>aefc0e0</code>)</td><td><code>withSwd</code> on the plugin</td><td>Arty A7-35T, LiteX "standard" core + official debug: MCU-Link (65 KB/s load, software + hardware breakpoints, <code>ndmreset</code>) and Black Magic Probe, identical results</td></tr>
 </tbody>
 </table>
 </div>
-<p>In both PRs the existing JTAG configurations generate netlists identical to <code>dev</code>, and the SWD blocks are
+<p>On both merges the existing JTAG configurations generate netlists identical to <code>dev</code>, and the SWD blocks are
 byte-identical to the SMP cluster's. The host side (probe, OpenOCD fork, configs) is unchanged. The plugin
 supports one hart; multi-hart designs use the SoC-level paths above.</p>
+<h3 id="elemrv"><a class="header" href="#elemrv">ElemRV</a></h3>
+<p><a href="https://github.com/aesc-silicon/elements-nafarr/pull/72">elements-nafarr#72</a>  adds SWD debug transport to ElemRV using EmbeddedRiscvJtag.</p>
 <hr>
 <h2 id="black-magic-probe-openocd-alternative"><a class="header" href="#black-magic-probe-openocd-alternative">Black Magic Probe (OpenOCD alternative)</a></h2>
 <p>A <a href="https://black-magic.org/">Black Magic Probe</a> (BMP) runs the GDB server <strong>on the probe</strong>: GDB
