@@ -16,13 +16,15 @@ RTL (`SwdPhy` / `SwdDp` / `SwdDmiGateway`) is Phase **2A–2C** and is not re-de
 | VexiiRiscv LiteX SoC `--with-swd` + MicroSoc `--swd` | VexiiRiscv [#184](https://github.com/SpinalHDL/VexiiRiscv/pull/184) | merged 2026-09-23 |
 | VexiiRiscv CPU-embedded debug plugin (`EmbeddedRiscvJtag`) over SWD, `--debug-swd` | VexiiRiscv [#188](https://github.com/SpinalHDL/VexiiRiscv/pull/188) | merged 2026-09-28 (`19b41a7`) |
 | VexRiscv CPU-embedded debug plugin (`EmbeddedRiscvJtag`) over SWD | VexRiscv [#500](https://github.com/SpinalHDL/VexRiscv/pull/500) | merged 2026-09-27 (`aefc0e0`) |
+| `DebugModule` hart selection: nonexistent-hart commands, `ackhavereset`, `dmstatus` `all*` | SpinalHDL [#1972](https://github.com/SpinalHDL/SpinalHDL/pull/1972) | merged 2026-10-06 (`58837d37` on `dev`; PR head `2952ac3ec`). See [dm.md](dm.md) |
 | ElemRV / nafarr: `DebugTransport` (`Jtag` default / `Swd`) on the VexiiRiscv `realtime` and `performance` presets | elements-nafarr [#72](https://github.com/aesc-silicon/elements-nafarr/pull/72) | merged 2026-09-29 (`54406843`). VexiiRiscv pin `19b41a7` is [#74](https://github.com/aesc-silicon/elements-nafarr/pull/74) (`b7a1257`) |
-| ElemRV / zibal: `debugTransport` on the Hydrogen / Carbon / Nitrogen platforms → `io_plat.jtag` or `io_plat.swd` | elements-zibal [#62](https://github.com/aesc-silicon/elements-zibal/pull/62) | open, submitted 2026-09-29 (`d78489b` on `main` `8f5e3f5`, which already pins nafarr `54406843`) |
+| ElemRV / zibal: `debugTransport` on the Hydrogen / Carbon / Nitrogen platforms → `io_plat.jtag` or `io_plat.swd` | elements-zibal [#62](https://github.com/aesc-silicon/elements-zibal/pull/62) | merged 2026-10-01 (`754cba41`, head `d78489b`). `main` is `d5f004ff`, which also adds the option on Oxygen, Phosphorus, and Sulfur (`d7c7b09`) |
+| pythondata-cpu-vexriscv_smp submodule pins (SpinalHDL `90b7d8eee`, VexRiscv `aefc0e0`) | litex-hub [#11](https://github.com/litex-hub/pythondata-cpu-vexriscv_smp/pull/11) | merged 2026-10-09 (`d1eff1f`, head `d3ce12e`). This pin does not include SpinalHDL#1972 |
 | JTAG on Xilinx USER chains (`add_cpu_jtag_debug`, `--with-cpu-jtag-debug`) | LiteX [#2572](https://github.com/enjoy-digital/litex/pull/2572) + linux-on-litex-vexriscv [#459](https://github.com/litex-hub/linux-on-litex-vexriscv/pull/459) | merged 2026-09-10 |
 | LiteX: `swdremote` sim module, OpenOCD configs, `--with-swd-debug` for `vexriscv_smp` | <https://github.com/disdi/litex/tree/swd> | branch, not yet proposed upstream |
 | linux-on-litex-vexriscv: SWD pads on Arty Pmod JB | <https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty> | branch, waits for the LiteX part |
 | OpenOCD (Vexriscv fork) | <https://github.com/disdi/openocd/tree/vexriscv-gateway> | branch; Gerrit [9786](https://review.openocd.org/c/openocd/+/9786) + gateway backend |
-| Black Magic Debug: DMI gateway AP support (no OpenOCD) | blackmagic [#2322](https://codeberg.org/blackmagic-debug/blackmagic/pulls/2322) — `disdi:feature/riscv-swd-dmi-gateway` | open, submitted 2026-09-25 — see [Black Magic Probe](#black-magic-probe-no-openocd) |
+| Black Magic Debug: DMI gateway AP support (no OpenOCD) | blackmagic [#2322](https://codeberg.org/blackmagic-debug/blackmagic/pulls/2322) — `disdi:feature/riscv-swd-dmi-gateway` | merged 2026-10-02 (`c8e59464` on `main`) — see [Black Magic Probe](#black-magic-probe-no-openocd) |
 
 
 **OpenOCD (host ONLY)** — :
@@ -732,7 +734,7 @@ supports one hart; multi-hart designs use the SoC-level paths above.
 
 [elements-nafarr#72](https://github.com/aesc-silicon/elements-nafarr/pull/72)  adds SWD debug transport to ElemRV using EmbeddedRiscvJtag.
 
-[elements-zibal#62](https://github.com/aesc-silicon/elements-zibal/pull/62) passes it through the zibal platforms: a board sets `debugTransport = DebugTransport.Swd` in `Hydrogen.Parameter` (or Carbon / Nitrogen) and wires two pads, `swclk` and `swdio`, instead of four JTAG pads.
+[elements-zibal#62](https://github.com/aesc-silicon/elements-zibal/pull/62), merged 2026-10-01 (`754cba41`), passes it through the zibal platforms: a board sets `debugTransport = DebugTransport.Swd` in `Hydrogen.Parameter` (or Carbon / Nitrogen) and wires two pads, `swclk` and `swdio`, instead of four JTAG pads. `main` (`d5f004ff`) also adds that option on Oxygen, Phosphorus, and Sulfur.
 
 ---
 
@@ -740,10 +742,10 @@ supports one hart; multi-hart designs use the SoC-level paths above.
 
 A [Black Magic Probe](https://black-magic.org/) (BMP) runs the GDB server **on the probe**: GDB
 connects straight to its USB serial port, with no OpenOCD in between. Stock BMP firmware reads
-this design's SW-DP but cannot use the DMI gateway AP. Support is proposed in
-**blackmagic [#2322](https://codeberg.org/blackmagic-debug/blackmagic/pulls/2322)**
-(`riscv_adi_dtm: support the SpinalHDL SWD "DMI gateway" AP`; branch
-`disdi:feature/riscv-swd-dmi-gateway`). No RTL change was needed.
+this design's SW-DP but cannot use the DMI gateway AP. Support landed in
+**blackmagic [#2322](https://codeberg.org/blackmagic-debug/blackmagic/pulls/2322)**,
+merged 2026-10-02 as `c8e59464`
+(`riscv_adi_dtm: support the SpinalHDL SWD "DMI gateway" AP`). No RTL change was needed.
 
 ### Wiring (BMP v2.3, same Arty Pmod JB harness)
 
@@ -765,7 +767,7 @@ this design's SW-DP but cannot use the DMI gateway AP. Support is proposed in
 ### Use
 
 ```sh
-# Probe firmware (BMP v2.x), from the blackmagic tree with #2322  :
+# Probe firmware (BMP v2.x), from blackmagic main (#2322 is c8e59464):
 meson setup build-fw --cross-file cross-file/bmp-v1-v2-riscv.ini && ninja -C build-fw
 dfu-util -d 1d50:6018,:6017 -s 0x08002000:leave -D build-fw/blackmagic_bmp_v1_v2_firmware.bin
 
