@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-dbfee068.js";
+            window.path_to_searchindex_js = "searchindex-7bd3c143.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -764,6 +764,7 @@ RTL (<code>SwdPhy</code> / <code>SwdDp</code> / <code>SwdDmiGateway</code>) is P
 <tr><td>VexiiRiscv CPU-embedded debug plugin (<code>EmbeddedRiscvJtag</code>) over SWD, <code>--debug-swd</code></td><td>VexiiRiscv <a href="https://github.com/SpinalHDL/VexiiRiscv/pull/188">#188</a></td><td>merged 2026-09-28 (<code>19b41a7</code>)</td></tr>
 <tr><td>VexRiscv CPU-embedded debug plugin (<code>EmbeddedRiscvJtag</code>) over SWD</td><td>VexRiscv <a href="https://github.com/SpinalHDL/VexRiscv/pull/500">#500</a></td><td>merged 2026-09-27 (<code>aefc0e0</code>)</td></tr>
 <tr><td><code>DebugModule</code> hart selection: nonexistent-hart commands, <code>ackhavereset</code>, <code>dmstatus</code> <code>all*</code></td><td>SpinalHDL <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1972">#1972</a></td><td>merged 2026-10-06 (<code>58837d37</code> on <code>dev</code>; PR head <code>2952ac3ec</code>). See <a href="#debug-module">dm.md</a></td></tr>
+<tr><td><code>DebugModule</code> System Bus Access: <code>sbautoincrement</code>, <code>sbdata0</code> after writes, bus and alignment errors, <code>sbaddress0</code> writes while <code>sberror</code> is set, <code>sbbusyerror</code> on reads</td><td>SpinalHDL <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1977">#1977</a></td><td>open since 2026-10-11 (head <code>cd6ad5eb5</code> on <code>dev</code> <code>58837d37</code>; CI green). See <a href="#debug-module">dm.md</a></td></tr>
 <tr><td>ElemRV / nafarr: <code>DebugTransport</code> (<code>Jtag</code> default / <code>Swd</code>) on the VexiiRiscv <code>realtime</code> and <code>performance</code> presets</td><td>elements-nafarr <a href="https://github.com/aesc-silicon/elements-nafarr/pull/72">#72</a></td><td>merged 2026-09-29 (<code>54406843</code>). VexiiRiscv pin <code>19b41a7</code> is <a href="https://github.com/aesc-silicon/elements-nafarr/pull/74">#74</a> (<code>b7a1257</code>)</td></tr>
 <tr><td>ElemRV / zibal: <code>debugTransport</code> on the Hydrogen / Carbon / Nitrogen platforms → <code>io_plat.jtag</code> or <code>io_plat.swd</code></td><td>elements-zibal <a href="https://github.com/aesc-silicon/elements-zibal/pull/62">#62</a></td><td>merged 2026-10-01 (<code>754cba41</code>, head <code>d78489b</code>). <code>main</code> is <code>d5f004ff</code>, which also adds the option on Oxygen, Phosphorus, and Sulfur (<code>d7c7b09</code>)</td></tr>
 <tr><td>pythondata-cpu-vexriscv_smp submodule pins (SpinalHDL <code>90b7d8eee</code>, VexRiscv <code>aefc0e0</code>)</td><td>litex-hub <a href="https://github.com/litex-hub/pythondata-cpu-vexriscv_smp/pull/11">#11</a></td><td>merged 2026-10-09 (<code>d1eff1f</code>, head <code>d3ce12e</code>). This pin does not include SpinalHDL#1972</td></tr>
