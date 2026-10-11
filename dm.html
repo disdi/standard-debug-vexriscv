@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-7bd3c143.js";
+            window.path_to_searchindex_js = "searchindex-886daae6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-73279bd6.js"></script>
@@ -179,6 +179,7 @@
                     <main>
                         <h1 id="debug-module"><a class="header" href="#debug-module">Debug Module</a></h1>
 <h3 id="phase-1b-core-dm-registers"><a class="header" href="#phase-1b-core-dm-registers">Phase 1B: Core DM Registers</a></h3>
+<p>Status of SpinalHDL <code>DebugModule</code> on upstream <code>dev</code> <code>58837d37</code>, checked on hardware (Arty A7, VexRiscv and VexiiRiscv, over SWD) against the ratified RISC-V Debug Specification 1.0.</p>
 <hr>
 <div class="table-wrapper">
 <table>
@@ -187,21 +188,21 @@
 </thead>
 <tbody>
 <tr><td><strong>Ch 3: Debug Module (DM)</strong></td><td></td><td></td></tr>
-<tr><td><code>dmcontrol</code> (0x10)</td><td>✅ Implemented</td><td><code>dmactive</code>, <code>ndmreset</code>, <code>haltreq</code>, <code>resumereq</code>, <code>ackhavereset</code>, <code>hartsello/hi</code>. Missing: <code>hasel</code>, <code>setresethaltreq</code>, <code>hartreset</code>, <code>keepalive</code></td></tr>
-<tr><td><code>dmstatus</code> (0x11)</td><td>✅ Implemented</td><td><code>version</code>, <code>authenticated=1</code>, all halted/running/unavail/nonexistent/resumeack/havereset flags, <code>impebreak=1</code></td></tr>
+<tr><td><code>dmcontrol</code> (0x10)</td><td>✅ Implemented</td><td><code>dmactive</code>, <code>ndmreset</code>, <code>haltreq</code>, <code>resumereq</code>, <code>ackhavereset</code>, <code>hartsello/hi</code>. Missing (optional): <code>hasel</code>, <code>setresethaltreq</code>/<code>clrresethaltreq</code>, <code>hartreset</code>, <code>keepalive</code>. <code>ackhavereset</code> acked the previously selected hart: fixed in <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1972">SpinalHDL#1972</a> (merged)</td></tr>
+<tr><td><code>dmstatus</code> (0x11)</td><td>✅ Implemented</td><td><code>version=2</code> (0.13), <code>authenticated=1</code>, all halted/running/unavail/nonexistent/resumeack/havereset flags, <code>impebreak=1</code>. A nonexistent hart read as halted, running and unavailable at once: fixed in <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1972">SpinalHDL#1972</a> (merged)</td></tr>
 <tr><td><code>hartinfo</code> (0x12)</td><td>✅ Implemented</td><td><code>dataaddr=0</code>, <code>datasize=0</code>, <code>dataaccess=0</code>, <code>nscratch=0</code></td></tr>
-<tr><td><code>abstractcs</code> (0x16)</td><td>✅ Implemented</td><td><code>datacount</code>, <code>progbufsize</code>, <code>busy</code>, <code>cmderr</code> (all 7 error codes)</td></tr>
-<tr><td><code>command</code> (0x17) — Access Register</td><td>✅ Implemented</td><td>cmdtype=0 with full FSM: transfer, write, postexec, aarsize validation, GPR+FPU register access</td></tr>
-<tr><td><code>command</code> (0x17) — Access Memory</td><td>❌ Not implemented</td><td>Returns NOT_SUPPORTED</td></tr>
-<tr><td><code>command</code> (0x17) — Quick Access</td><td>❌ Not implemented</td><td>Returns NOT_SUPPORTED</td></tr>
-<tr><td><code>abstractauto</code> (0x18)</td><td>✅ Implemented</td><td><code>autoexecdata</code> and <code>autoexecProgbuf</code> for burst access</td></tr>
-<tr><td><code>progbuf0-N</code> (0x20+)</td><td>✅ Implemented</td><td>Parameterized progbuf memory, multi-word execution with counter, redo support</td></tr>
-<tr><td><code>data0-N</code> (0x04+)</td><td>✅ Implemented</td><td>Memory-backed, hart writes via <code>fromHarts</code>, host reads async</td></tr>
-<tr><td><code>sbcs</code> (0x38) — System Bus Access</td><td>✅ Implemented (optional)</td><td><code>sbversion=1</code>, <code>sbaccess</code>, <code>sbbusyerror</code>, <code>sbbusy</code>, <code>sbreadonaddr</code>, <code>sbautoincrement</code>, <code>sbreadondata</code>, <code>sberror</code>, 32-bit only</td></tr>
-<tr><td><code>sbaddress0</code> (0x39)</td><td>✅ Implemented</td><td>Read/write with auto-increment</td></tr>
-<tr><td><code>sbdata0</code> (0x3c)</td><td>✅ Implemented</td><td>Read/write with bus triggers</td></tr>
+<tr><td><code>abstractcs</code> (0x16)</td><td>✅ Implemented</td><td><code>datacount</code>, <code>progbufsize</code>, <code>busy</code>, <code>cmderr</code>. Only codes 0–4 are raised; the unused <code>OTHER</code> code would encode as 6 instead of 7 (latent)</td></tr>
+<tr><td><code>command</code> (0x17) — Access Register</td><td>⚠️ Implemented, open issues</td><td>cmdtype=0 with full FSM: transfer, write, postexec, aarsize validation. GPRs; FPRs only with a 64-bit FPU on VexRiscv, never on VexiiRiscv. CSRs and <code>aarpostincrement</code> return NOT_SUPPORTED (allowed). A command to a nonexistent hart hung <code>busy</code>: fixed in <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1972">SpinalHDL#1972</a> (merged). Open: FPR access on a hart without an FPU returns cmderr 2 instead of 3; a <code>command</code> write while <code>busy</code> or <code>cmderr≠0</code> replaces the stored command</td></tr>
+<tr><td><code>command</code> (0x17) — Access Memory</td><td>❌ Not implemented</td><td>Returns NOT_SUPPORTED (optional)</td></tr>
+<tr><td><code>command</code> (0x17) — Quick Access</td><td>❌ Not implemented</td><td>Returns NOT_SUPPORTED (optional)</td></tr>
+<tr><td><code>abstractauto</code> (0x18)</td><td>⚠️ Implemented, open issue</td><td><code>autoexecdata</code> and <code>autoexecProgbuf</code> for burst access. Open: a write while <code>busy</code> takes effect</td></tr>
+<tr><td><code>progbuf0-N</code> (0x20+)</td><td>⚠️ Implemented, open issue</td><td>Parameterized progbuf memory (2 words), multi-word execution with counter, redo support, exception → <code>cmderr=3</code>. Reads return 0 (allowed in 1.0). Open: a write while <code>busy</code> takes effect</td></tr>
+<tr><td><code>data0-N</code> (0x04+)</td><td>✅ Implemented</td><td>Memory-backed, hart writes via <code>fromHarts</code>, host reads async. 1 word on RV32, 2 on RV64</td></tr>
+<tr><td><code>sbcs</code> (0x38) — System Bus Access</td><td>⚠️ Implemented (optional, VexiiRiscv <code>--debug-sysbus</code> only), fixes in review</td><td><code>sbversion=1</code>, <code>sbasize=32</code>, <code>sbaccess32</code> only, <code>sbbusyerror</code>, <code>sbbusy</code>, <code>sbreadonaddr</code>, <code>sbautoincrement</code>, <code>sbreadondata</code>, <code>sberror</code>. Not present on VexRiscv. Bus errors and unaligned addresses were not reported in <code>sberror</code>: fixed in <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1977">SpinalHDL#1977</a> (open)</td></tr>
+<tr><td><code>sbaddress0</code> (0x39)</td><td>⚠️ Implemented, fixes in review</td><td>Read/write with auto-increment. It did not increment after writes or after the <code>sbreadonaddr</code> read, and writes were dropped while <code>sberror≠0</code>: fixed in <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1977">SpinalHDL#1977</a> (open)</td></tr>
+<tr><td><code>sbdata0</code> (0x3c)</td><td>⚠️ Implemented, fixes in review</td><td>Read/write with bus triggers. Block writes with <code>sbautoincrement</code> all landed on the first address, <code>sbdata0</code> was overwritten by the write acknowledge, and a read while busy did not set <code>sbbusyerror</code>: fixed in <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1977">SpinalHDL#1977</a> (open)</td></tr>
 <tr><td><code>sbaddress1-3</code> / <code>sbdata1-3</code></td><td>❌ Not implemented</td><td>32-bit address/data only</td></tr>
-<tr><td><code>sbcs</code> 8/16/64/128-bit access</td><td>❌ Not implemented</td><td>Only <code>sbaccess32</code> supported</td></tr>
+<tr><td><code>sbcs</code> 8/16/64/128-bit access</td><td>❌ Not implemented</td><td>Only <code>sbaccess32</code> supported; other sizes set <code>sberror=4</code></td></tr>
 <tr><td><code>haltsum0</code> (0x40)</td><td>✅ Implemented</td><td>Per-hart halted bits, up to 32 harts</td></tr>
 <tr><td><code>haltsum1-3</code></td><td>❌ Not implemented</td><td>Only <code>haltsum0</code> exists</td></tr>
 <tr><td><code>authdata</code> (0x30)</td><td>❌ Not implemented</td><td>Always authenticated</td></tr>
@@ -210,7 +211,7 @@
 <tr><td><code>dmcs2</code> (0x32)</td><td>❌ Not implemented</td><td>—</td></tr>
 <tr><td>Hart arrays (<code>hawindowsel</code>/<code>hawindow</code>)</td><td>❌ Not implemented</td><td>—</td></tr>
 <tr><td><code>custom0-15</code></td><td>❌ Not implemented</td><td>—</td></tr>
-<tr><td>Multi-hart support</td><td>✅ Implemented</td><td>Parameterized <code>p.harts</code>, per-hart buses, <code>hartSel</code> selection</td></tr>
+<tr><td>Multi-hart support</td><td>⚠️ Implemented, open issue</td><td>Parameterized <code>p.harts</code>, per-hart buses, <code>hartSel</code> selection; independent halt/resume and abstract commands per hart (2-hart VexiiRiscv). Hart-selection bugs fixed in <a href="https://github.com/SpinalHDL/SpinalHDL/pull/1972">SpinalHDL#1972</a> (merged). Open: an abstract register read occasionally returns the other hart's value right after a reset</td></tr>
 </tbody>
 </table>
 </div>
