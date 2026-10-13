@@ -2,7 +2,7 @@
 
 ### Phase 1B: Core DM Registers
 
-Status of SpinalHDL `DebugModule` on upstream `dev` `58837d37`, checked on hardware (Arty A7, VexRiscv and VexiiRiscv, over SWD) against the ratified RISC-V Debug Specification 1.0.
+Status of SpinalHDL `DebugModule` on upstream `dev` `8ae0019178ba` ([SpinalHDL#1977](https://github.com/SpinalHDL/SpinalHDL/pull/1977), merged 2026-10-13), checked on hardware (Arty A7, VexRiscv and VexiiRiscv, over SWD) against the ratified RISC-V Debug Specification 1.0. The System Bus Access rows are that merge; the other rows were checked on its parent `58837d37` and #1977 does not change them.
 
 ---
 | Spec Feature (Chapter) | Vexriscv Debug Implementation | Implementation Details |
@@ -18,9 +18,9 @@ Status of SpinalHDL `DebugModule` on upstream `dev` `58837d37`, checked on hardw
 | `abstractauto` (0x18) | ⚠️ Implemented, open issue | `autoexecdata` and `autoexecProgbuf` for burst access. Open: a write while `busy` takes effect |
 | `progbuf0-N` (0x20+) | ⚠️ Implemented, open issue | Parameterized progbuf memory (2 words), multi-word execution with counter, redo support, exception → `cmderr=3`. Reads return 0 (allowed in 1.0). Open: a write while `busy` takes effect |
 | `data0-N` (0x04+) | ✅ Implemented | Memory-backed, hart writes via `fromHarts`, host reads async. 1 word on RV32, 2 on RV64 |
-| `sbcs` (0x38) — System Bus Access | ⚠️ Implemented (optional, VexiiRiscv `--debug-sysbus` only), fixes in review | `sbversion=1`, `sbasize=32`, `sbaccess32` only, `sbbusyerror`, `sbbusy`, `sbreadonaddr`, `sbautoincrement`, `sbreadondata`, `sberror`. Not present on VexRiscv. Bus errors and unaligned addresses were not reported in `sberror`: fixed in [SpinalHDL#1977](https://github.com/SpinalHDL/SpinalHDL/pull/1977) (open) |
-| `sbaddress0` (0x39) | ⚠️ Implemented, fixes in review | Read/write with auto-increment. It did not increment after writes or after the `sbreadonaddr` read, and writes were dropped while `sberror≠0`: fixed in [SpinalHDL#1977](https://github.com/SpinalHDL/SpinalHDL/pull/1977) (open) |
-| `sbdata0` (0x3c) | ⚠️ Implemented, fixes in review | Read/write with bus triggers. Block writes with `sbautoincrement` all landed on the first address, `sbdata0` was overwritten by the write acknowledge, and a read while busy did not set `sbbusyerror`: fixed in [SpinalHDL#1977](https://github.com/SpinalHDL/SpinalHDL/pull/1977) (open) |
+| `sbcs` (0x38) — System Bus Access | ✅ Implemented (optional, VexiiRiscv `--debug-sysbus` only) | `sbversion=1`, `sbasize=32`, `sbaccess32` only, `sbbusyerror`, `sbbusy`, `sbreadonaddr`, `sbautoincrement`, `sbreadondata`, `sberror`. Not present on VexRiscv. Bus errors and unaligned addresses were not reported in `sberror`: fixed in [SpinalHDL#1977](https://github.com/SpinalHDL/SpinalHDL/pull/1977) (merged) |
+| `sbaddress0` (0x39) | ✅ Implemented | Read/write with auto-increment. It did not increment after writes or after the `sbreadonaddr` read, and writes were dropped while `sberror≠0`: fixed in [SpinalHDL#1977](https://github.com/SpinalHDL/SpinalHDL/pull/1977) (merged) |
+| `sbdata0` (0x3c) | ✅ Implemented | Read/write with bus triggers. Block writes with `sbautoincrement` all landed on the first address, `sbdata0` was overwritten by the write acknowledge, and a read while busy did not set `sbbusyerror`: fixed in [SpinalHDL#1977](https://github.com/SpinalHDL/SpinalHDL/pull/1977) (merged) |
 | `sbaddress1-3` / `sbdata1-3` | ❌ Not implemented | 32-bit address/data only |
 | `sbcs` 8/16/64/128-bit access | ❌ Not implemented | Only `sbaccess32` supported; other sizes set `sberror=4` |
 | `haltsum0` (0x40) | ✅ Implemented | Per-hart halted bits, up to 32 harts |

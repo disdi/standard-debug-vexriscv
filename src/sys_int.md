@@ -17,13 +17,15 @@ RTL (`SwdPhy` / `SwdDp` / `SwdDmiGateway`) is Phase **2A–2C** and is not re-de
 | VexiiRiscv CPU-embedded debug plugin (`EmbeddedRiscvJtag`) over SWD, `--debug-swd` | VexiiRiscv [#188](https://github.com/SpinalHDL/VexiiRiscv/pull/188) | merged 2026-09-28 (`19b41a7`) |
 | VexRiscv CPU-embedded debug plugin (`EmbeddedRiscvJtag`) over SWD | VexRiscv [#500](https://github.com/SpinalHDL/VexRiscv/pull/500) | merged 2026-09-27 (`aefc0e0`) |
 | `DebugModule` hart selection: nonexistent-hart commands, `ackhavereset`, `dmstatus` `all*` | SpinalHDL [#1972](https://github.com/SpinalHDL/SpinalHDL/pull/1972) | merged 2026-10-06 (`58837d37` on `dev`; PR head `2952ac3ec`). See [dm.md](dm.md) |
-| `DebugModule` System Bus Access: `sbautoincrement`, `sbdata0` after writes, bus and alignment errors, `sbaddress0` writes while `sberror` is set, `sbbusyerror` on reads | SpinalHDL [#1977](https://github.com/SpinalHDL/SpinalHDL/pull/1977) | open since 2026-10-11 (head `cd6ad5eb5` on `dev` `58837d37`; CI green). See [dm.md](dm.md) |
+| `DebugModule` System Bus Access: `sbautoincrement`, `sbdata0` after writes, bus and alignment errors, `sbaddress0` writes while `sberror` is set, `sbbusyerror` on reads | SpinalHDL [#1977](https://github.com/SpinalHDL/SpinalHDL/pull/1977) | merged 2026-10-13 (`8ae0019178ba` on `dev`; PR head `cd6ad5eb5`). See [dm.md](dm.md) |
 | ElemRV / nafarr: `DebugTransport` (`Jtag` default / `Swd`) on the VexiiRiscv `realtime` and `performance` presets | elements-nafarr [#72](https://github.com/aesc-silicon/elements-nafarr/pull/72) | merged 2026-09-29 (`54406843`). VexiiRiscv pin `19b41a7` is [#74](https://github.com/aesc-silicon/elements-nafarr/pull/74) (`b7a1257`) |
 | ElemRV / zibal: `debugTransport` on the Hydrogen / Carbon / Nitrogen platforms → `io_plat.jtag` or `io_plat.swd` | elements-zibal [#62](https://github.com/aesc-silicon/elements-zibal/pull/62) | merged 2026-10-01 (`754cba41`, head `d78489b`). `main` is `d5f004ff`, which also adds the option on Oxygen, Phosphorus, and Sulfur (`d7c7b09`) |
-| pythondata-cpu-vexriscv_smp submodule pins (SpinalHDL `90b7d8eee`, VexRiscv `aefc0e0`) | litex-hub [#11](https://github.com/litex-hub/pythondata-cpu-vexriscv_smp/pull/11) | merged 2026-10-09 (`d1eff1f`, head `d3ce12e`). This pin does not include SpinalHDL#1972 |
+| pythondata-cpu-vexriscv_smp submodule pins (SpinalHDL `90b7d8eee`, VexRiscv `aefc0e0`) | litex-hub [#11](https://github.com/litex-hub/pythondata-cpu-vexriscv_smp/pull/11) | merged 2026-10-09 (`d1eff1f`, head `d3ce12e`). Those gitlinks are unchanged on current `master` (`c24439b`). The pin includes neither #502 nor SpinalHDL#1972/#1977 |
+| LiteX SMP generator enables `CounterPlugin` so `utime` is driven | VexRiscv [#502](https://github.com/SpinalHDL/VexRiscv/pull/502) | merged 2026-10-13 (`03dc61d` on `dev`; PR head `5f3c9872`). Not yet in the pythondata VexRiscv gitlink (`aefc0e07`) |
+| `Ram_1w_1rs` accepts `rdLatency` and `rd_dataEn` | pythondata-cpu-vexriscv_smp [#12](https://github.com/litex-hub/pythondata-cpu-vexriscv_smp/pull/12) | merged 2026-10-12 (`c24439b`, current `master`; PR head `0398c87`) |
 | JTAG on Xilinx USER chains (`add_cpu_jtag_debug`, `--with-cpu-jtag-debug`) | LiteX [#2572](https://github.com/enjoy-digital/litex/pull/2572) + linux-on-litex-vexriscv [#459](https://github.com/litex-hub/linux-on-litex-vexriscv/pull/459) | merged 2026-09-10 |
-| LiteX: `--with-swd-debug` for `vexriscv_smp` (`VexRiscvSMP.with_swd`, `add_swd()`), `swdremote` sim module, `litex_sim --with-swdremote` | LiteX [#2669](https://github.com/enjoy-digital/litex/pull/2669) — `disdi:vexriscv-smp-swd` | open since 2026-10-11 (head `e0ace9f19`, three commits; CI passed). An SWD build also needs pythondata at or after #11; LiteX `litex_repos.py` currently pins it to the earlier `217d23d` |
-| linux-on-litex-vexriscv: SWD pads on Arty Pmod JB (`add_cpu_swd_debug`) | linux-on-litex-vexriscv [#469](https://github.com/litex-hub/linux-on-litex-vexriscv/pull/469) — `disdi:swd-arty` | open since 2026-10-11 (head `aff2e62`, one commit). Depends on LiteX #2669: on a LiteX without `VexRiscvSMP.with_swd` every build stops with `AttributeError`. Hardware-verified on the Arty A7-35T and A7-100T |
+| LiteX: `--with-swd-debug` for `vexriscv_smp` (`VexRiscvSMP.with_swd`, `add_swd()`), `swdremote` sim module, `litex_sim --with-swdremote` | LiteX [#2669](https://github.com/enjoy-digital/litex/pull/2669) — `disdi:vexriscv-smp-swd` | merged 2026-10-12 (`9e76f9ae0`, head `e0ace9f19`). `litex_repos.py` still pins pythondata-cpu-vexriscv_smp to `217d23d`. The pin can move once a pythondata commit gitlinks VexRiscv at #502 (`03dc61d`); `c24439b` still leaves `utime` undriven |
+| linux-on-litex-vexriscv: SWD pads on Arty Pmod JB (`add_cpu_swd_debug`) | linux-on-litex-vexriscv [#469](https://github.com/litex-hub/linux-on-litex-vexriscv/pull/469) — `disdi:swd-arty` | open since 2026-10-11 (head `aff2e62`, one commit, mergeable). CI has not run (`action_required`). Hardware-verified on the Arty A7-35T and A7-100T. `VexRiscvSMP.with_swd` is on LiteX master since #2669 |
 | OpenOCD (Vexriscv fork) | <https://github.com/disdi/openocd/tree/vexriscv-gateway> | branch; Gerrit [9786](https://review.openocd.org/c/openocd/+/9786) + gateway backend |
 | Black Magic Debug: DMI gateway AP support (no OpenOCD) | blackmagic [#2322](https://codeberg.org/blackmagic-debug/blackmagic/pulls/2322) — `disdi:feature/riscv-swd-dmi-gateway` | merged 2026-10-02 (`c8e59464` on `main`) — see [Black Magic Probe](#black-magic-probe-no-openocd) |
 
@@ -395,9 +397,8 @@ One transport per bitstream — do not combine with `--jtag-tap`.
 (`_swd_pmod_io` / `add_cpu_swd_debug`) on
 <https://github.com/disdi/linux-on-litex-vexriscv/tree/swd-arty>, proposed upstream as
 linux-on-litex-vexriscv [#469](https://github.com/litex-hub/linux-on-litex-vexriscv/pull/469).
-The LiteX side (`--with-swd-debug`, `VexRiscvSMP.with_swd`) is LiteX
-[#2669](https://github.com/enjoy-digital/litex/pull/2669); #469 needs it and fails with
-`AttributeError` on a LiteX that does not have it.
+The LiteX side (`--with-swd-debug`, `VexRiscvSMP.with_swd`) landed in LiteX
+[#2669](https://github.com/enjoy-digital/litex/pull/2669) (`9e76f9ae0`). #469 is still open.
 
 **Prerequisites**
 
